@@ -23,4 +23,4 @@ https://brainstorm-program.github.io/brainstorm_challenge_2024/
   - raw timeseries (`_raw`) in two formats -- FIFF and brainvision
   - anatomical info (`_chinfo.csv`)
   - trial events / triggers (`_events.csv`)
-  - trial metadata (`events_metadata.csv`)  -- not yet added
+- epochs subdirectory: trial/event epoched data
