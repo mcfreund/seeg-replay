@@ -3,97 +3,106 @@ import re
 import mne
 import numpy as np
 import pandas as pd
-import pickle
-import bz2
-import _pickle
 from joblib import Parallel, delayed
 
-from src.preproc.utils import zapline_clean
-from src.preproc.constants import trigs, dir_data, dir_orig_data
-from src.preproc.utils import construct_raw
+from src.preproc.utils import zapline_clean, rereference, annot_bad_times
+from src.preproc.constants import dir_data
+
+do_mark_bads = False
+rerun_subj = ["e0010GP", "e0011XQ", "e0013LW", "e0015TJ", "e0016YR", "e0017MC"]
+
+session_info = pd.read_csv(os.path.join(dir_data, "session_info.csv"))
 
 
-## TODO:
-## preprocessing
-## 1. mark bad channels
-## 2. attenuate power-line noise
-## 3. re-reference
-## 4. annotate bad time samples
-## 5. filter
-## 6. epoch (use beh data files)
+## first mark bad channels for all files:
 
+if do_mark_bads:
+    for i, d in session_info.iterrows():
+        print("Marking bads for subject " + d["participant_id"] + ", session " + d["session"] + "...")
+        print("File " + str(i + 1) + " of " + str(len(session_info)))
 
-## manually mark bad channels and update each subject's chinfo
+        ## get paths:
+        dir_subj = os.path.join(dir_data, d["participant_id"])
+        dir_sess = os.path.join(dir_subj, d["session"])
+        fname_base = d["participant_id"] + "_" + d["session"]
 
-if 'bad_chs' in locals() or 'bad_chs' in globals():
-    print('ned to implement')
-    for (raw, chinfo), (i, d) in zip(raws, session_info.iterrows()):
-       is_bad = [ch in bad_chs for ch in chinfo["ch_name"]]
-       chinfo["is_bad_sess-" + d["session"]] = is_bad
-else:
-    for (raw, chinfo), (i, d) in zip(raws, session_info.iterrows()):
+        raw = mne.io.read_raw_fif(os.path.join(dir_sess, fname_base + "_raw.fif"), preload = True)
+        chinfo = pd.read_csv(os.path.join(dir_subj, d["participant_id"] + "_chinfo.csv"))
+
+        ## manually mark bad channels and update each subject's chinfo
         raw.compute_psd().plot()
-        raw.plot(block = True)  ## halts loop until plot is closed (i.e., after bad marked); NB: modifies data in raws
-        is_bad = [ch in raw.info["bads"] for ch in chinfo["ch_name"]]
-        chinfo["is_bad_sess-" + d["session"]] = is_bad  ##  NB: modifies data in raws
+        raw.plot(block = True)  ## halts loop until plot is closed; use to mark bads.
+        is_bad = [ch in raw.info["bads"] for ch in chinfo["contact"]]
+        chinfo["is_bad_sess_" + d["session"]] = is_bad
 
+        ## save/update
+        chinfo.to_csv(os.path.join(dir_subj, d["participant_id"] + "_chinfo.csv"), index = False)
+        raw.save(os.path.join(dir_sess, fname_base + "_raw.fif"), overwrite = True)
+    
+    print("done marking bads.")
 
-## attenuate power-line noise
+## proceed with rest of preprocessing:
 
-raws_no60hz, raws_60hz = [], []
-for raw, chinfo in raws:
-    raw_clean, raw_artif = zapline_clean(raw)
-    raws_no60hz.append(raw_clean)
-    raws_60hz.append(raw_artif)
+for i, d in session_info.iterrows():
+    print("Processing subject " + d["participant_id"] + ", session " + d["session"] + "...")
+    print("File " + str(i + 1) + " of " + str(len(session_info)))
 
-#raw_clean, raw_artif = zapline_clean(raw)
-#raw.compute_psd().plot()
-#raw_clean.compute_psd().plot()
-#raw_artif.compute_psd().plot()
-#raw.plot()
-#raw_clean.plot()
-#raw_artif.plot()
+    if not d["participant_id"] in rerun_subj:
+        print("Skipping this subject.")
+        continue
 
+    ## get paths:
+    dir_subj = os.path.join(dir_data, d["participant_id"])
+    dir_sess = os.path.join(dir_subj, d["session"])
+    fname_base = d["participant_id"] + "_" + d["session"]
 
-## re-reference
+    raw = mne.io.read_raw_fif(os.path.join(dir_sess, fname_base + "_raw.fif"), preload = True)
+    chinfo = pd.read_csv(os.path.join(dir_subj, d["participant_id"] + "_chinfo.csv"))
 
+    ## attenuate power-line noise
+    ## check if "n_remove_60hz" is in d, which is a series pandas object:
+    if "n_remove_60hz" in d.keys():
+        n_remove = d["n_remove_60hz"]
+    else:
+        n_remove = 3
+    raw_no60hz, raw_60hz = zapline_clean(raw, nremove = n_remove)  ## NB: this does not exclude bad chs
 
+    ## re-reference (laplacian)
+    
+    raw_no60hz_ref, chinfo = rereference(
+        raw_no60hz, chinfo,
+        method = "laplacian",
+        drop_bads = True,
+        selfref_first = False)
 
-## annotate bad time samples
+    ## annotate bad time samples
+    
+    bad_annots = annot_bad_times(raw_no60hz_ref, thresh = 12, duration = 6/1024)
+    raw_no60hz_ref.set_annotations(raw_no60hz_ref.annotations + bad_annots)
 
+    ## filter
+    l_freq = 0.5
+    h_freq = 200
+    raw_no60hz_ref_bp = raw_no60hz_ref.copy().filter(l_freq, h_freq)
 
+    ## save/update
+    
+    chinfo.to_csv(os.path.join(dir_subj, d["participant_id"] + "_chinfo.csv"), index = False)
+    raw_no60hz.save(os.path.join(dir_sess, fname_base + "_no60hz_raw.fif"), overwrite = True)
+    raw_no60hz_ref.save(os.path.join(dir_sess, fname_base + "_no60hz_ref_raw.fif"), overwrite = True)
+    raw_no60hz_ref_bp.save(os.path.join(dir_sess, fname_base + "_no60hz_ref_bp_raw.fif"), overwrite = True)
 
-## filter
-
-
-
-
-## scratch ---
-    #raws[i][1] = chinfo
-
-
-
-#raws[0][0].plot()
-
-
-##"e0015TJ"  ## something's up with this subject's channels.
-
-
-## epoching ---
-
-
-
-## scratch 
-    # session_info = []
-# for item in os.listdir(dir_data):
-#     if os.path.isdir(os.path.join(dir_data, item)):
-#         date, subject, session = item.split('_')
-#         session_info.append([date, subject, session])
-# session_info = pd.DataFrame(session_info, columns = ['date', 'subject', 'session'])
-# #session_info = session_info[session_info["subject"].isin(good_subjects)]
-# session_info = session_info.reset_index()
-
-# subject = subject_info.iloc[0]["participant_id"]
-# session = subject_info.iloc[0]["session"]
-# subdir_orig = subject_info.iloc[0]["subdir_orig"]
-# raw, chinfo = construct_raw(subject, session, subdir_orig)
+    ## save plots:
+    raws = [raw, raw_no60hz, raw_no60hz_ref, raw_no60hz_ref_bp]
+    titles = [
+        "raw",
+        "n_remove_60hz = " + str(n_remove),
+        "n_remove_60hz = " + str(n_remove) + " ref = laplacian",
+        "n_remove_60hz = " + str(n_remove) + " ref = laplacian, bandpass = " + str(l_freq) + "-" + str(h_freq)
+        ]
+    for r, t in zip(raws, titles):
+        ## psds:
+        fig = r.compute_psd().plot(show = False)
+        fig.axes[0].set_title("raw timeseries: " + fname_base + "\n" + t)
+        fn_psd = os.path.join(os.path.abspath("figs"), "raw", fname_base + "_" + t + "_psd.png")
+        fig.savefig(fn_psd)

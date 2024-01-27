@@ -7,6 +7,7 @@ import pickle
 import bz2
 import _pickle
 import meegkit
+import scipy
 
 from src.preproc.constants import trigs, dir_data, dir_orig_data, dir_chinfo, sfreq, scale, line_freq
 
@@ -102,9 +103,33 @@ def construct_raw(
     return raw, chinfo
 
 
+def zapline_clean(
+        raw,
+        nremove = 1, nfft = 1024, nkeep = None, blocksize = None, show = False
+        ):
+    ## from: https://mne.discourse.group/t/clean-line-noise-zapline-method-function-for-mne-using-meegkit-toolbox/7407/2
+    ## uses: https://github.com/nbara/python-meegkit/blob/9204cfd8d596be479ddae932108445b4f560010a/meegkit/dss.py#L149
+
+    cleaned_raw, artif_raw = raw.copy(), raw.copy()
+    out, artif = meegkit.dss.dss_line(
+        X = raw.get_data().T, 
+        fline = raw.info["line_freq"],
+        sfreq = raw.info['sfreq'],
+        nremove = nremove,
+        nfft = nfft,
+        nkeep = nkeep,
+        blocksize = blocksize,
+        show = show)
+
+    cleaned_raw._data = out.T
+    artif_raw._data = artif.T
+
+    return cleaned_raw, artif_raw
+
 
 def _cluster_contacts(signal_list):
     """ return electrode-contact hierarchy """
+    ## from: https://github.com/Brainstorm-Program/Brainstorm-Challenge-PreProcessing/blob/main/rereference_bipolar
 
     signal_dict = {}
 
@@ -123,30 +148,147 @@ def _cluster_contacts(signal_list):
     return signal_dict
 
 
-def zapline_clean(
-        raw,
-        nremove = 1, nfft = 1024, nkeep = None, blocksize = None, show = False
-        ):
-    ## from: https://mne.discourse.group/t/clean-line-noise-zapline-method-function-for-mne-using-meegkit-toolbox/7407/2
-    ## uses: https://github.com/nbara/python-meegkit/blob/9204cfd8d596be479ddae932108445b4f560010a/meegkit/dss.py#L149
+def _reref_electrodes(signals, signal_list, method = 'laplacian', selfref_first = False):
+    """ references given signals """
+    ## adapted from: https://github.com/Brainstorm-Program/Brainstorm-Challenge-PreProcessing/blob/main/rereference_bipolar
 
-    data = raw.get_data().T
-   
-    out, artif = meegkit.dss.dss_line(
-        X = data, 
-        fline = raw.info["line_freq"],
-        sfreq = raw.info['sfreq'],
-        nremove = nremove,
-        nfft = nfft,
-        nkeep = nkeep,
-        blocksize = blocksize,
-        show = show)
+    # https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6495648/
+    # signals: 2d array of time-series data (rows = electrodes as defined and indexed by signal list, columns = time)
+    # signal_list = electrode labels, in order of rows in signals variable; must be the same length
+    # method = referencing method
+           
+    signal_dict = _cluster_contacts(signal_list) 
 
-    cleaned_raw = mne.io.RawArray(out.T, raw.info)
-    artif_raw = mne.io.RawArray(artif.T, raw.info)
+    sig_list_new = []
+    signals_new = []
+    if method == 'unipolar':
+        signals_new = signals
+    else:
+        for sig in signal_dict:
+            if method == 'mean':
+                channels = [signal_list.index(e) for e in signal_list if sig in e]
+                sig_ref = signals[channels, :] - np.mean(signals[channels,:], axis=0)
+                signals_new.append(sig_ref)
+            
+            else:
+                minn = np.min(signal_dict[sig])
+                maxn = np.max(signal_dict[sig])
+                for num in signal_dict[sig]:
+                    if method == 'bipolar':
+                        if num >= minn and num < maxn:
+                            adj = 1
+                            if num + adj <= maxn:
+                                while not '{}{}'.format(sig, num+adj) in signal_list and num + adj <= maxn:
+                                    adj += 1
+                                sig_list_new.append('{}{}'.format(sig, num))
+                                sig_ref_i = signal_list.index('{}{}'.format(sig, num))
+                                sig_ref_j = signal_list.index('{}{}'.format(sig, num + adj))
+                                sig_ref = signals[sig_ref_i, :] - signals[sig_ref_j, :]
+                                signals_new.append(sig_ref)
 
-    return cleaned_raw, artif_raw
+                    elif method == 'laplacian':
+                        if num > minn and num < maxn:
+                            hi = 1
+                            lo = 1
+                            above = '{}{}'.format(sig, num + hi)
+                            below = '{}{}'.format(sig, num - lo)
+                            while above not in signal_list or below not in signal_list and num + hi <= maxn:
+                                if above not in signal_list:
+                                    hi += 1
+                                if below not in signal_list:
+                                    lo += 1
+                                above = '{}{}'.format(sig, num + hi)
+                                below = '{}{}'.format(sig, num - lo)
 
+                            sig_ref_i = signal_list.index(below)
+                            sig_ref_j = signal_list.index(above)
+                            sig_ref_0 = signal_list.index('{}{}'.format(sig, num))
+
+                            print('{} = {} - {}'.format('{}{}'.format(sig, num), below, above))
+
+                            sig_list_new.append('{}{}'.format(sig, num))
+                            sig_ref = signals[sig_ref_0, :] - (signals[sig_ref_i, :] + signals[sig_ref_j, :])/2
+                            signals_new.append(sig_ref)
+                        elif num == minn and selfref_first:
+                            hi = 1
+                            above = '{}{}'.format(sig, num + hi)
+                            while above not in signal_list and num + hi <= maxn:
+                                hi += 1
+                                above = '{}{}'.format(sig, num + hi)
+
+                            sig_ref_j = signal_list.index(above)
+                            sig_ref_0 = signal_list.index('{}{}'.format(sig, num))
+
+                            print('{} = {} - {}'.format('{}{}'.format(sig, num), '{}{}'.format(sig, num), above))
+
+                            sig_list_new.append('{}{}'.format(sig, num))
+                            sig_ref = signals[sig_ref_0, :] - signals[sig_ref_j, :]
+                            signals_new.append(sig_ref)                                
+
+    if len(sig_list_new) == 0:
+        sig_list_new = signal_list
+
+    signals_new = np.vstack(signals_new)
+
+    return signals_new, sig_list_new
+
+
+def rereference(
+    raw, chinfo,
+    method = 'laplacian',
+    drop_bads = True,
+    selfref_first = False
+    ):
+    """ wrapper for feeding mne objects into  _ref_electrodes() """
+
+    raw_copy = raw.copy()
+    if drop_bads:
+        raw_copy.drop_channels(raw_copy.info["bads"])
+    
+    data_ref, ch_names_ref =_reref_electrodes(
+        signals = raw_copy.get_data(),
+        signal_list = raw_copy.ch_names,
+        method = method,
+        selfref_first = selfref_first)
+
+    ## mark chinfo with those that were rereferenced
+    chinfo["was_rereferenced"] = chinfo["contact"].isin(ch_names_ref)
+
+    ## add data back to raw
+    dropped_chs = [ch for ch in raw_copy.ch_names if ch not in ch_names_ref]  ## drop
+    raw_copy.drop_channels(dropped_chs)
+    if raw_copy.ch_names != ch_names_ref:
+        raise Exception("ch_names_ref and raw_copy.ch_names do not match.")
+    raw_copy._data = data_ref
+
+    return raw_copy, chinfo
+
+
+
+
+def _get_bad_samples(data, thresh, consensus):
+    #grad = np.gradient(data, axis = 1)
+    #g_zs = scipy.stats.zscore(grad, axis = 1)
+    h_zs = scipy.stats.zscore(data, axis = 1)
+    #is_bad = np.logical_or(np.abs(g_zs) > thresh, np.abs(h_zs > thresh))
+    is_bad = np.abs(h_zs) > thresh
+    reject = np.sum(is_bad, axis = 0) > (consensus - 1)
+    print("Marked " + str(round(np.mean(reject), 4)) + "% samples bad.")
+
+    return reject
+
+
+def annot_bad_times(raw, thresh = 5, duration = 1, description = "BAD_outlier", consensus = 1):
+
+    bad_samp = _get_bad_samples(raw.get_data(), thresh = thresh, consensus = consensus)
+    bad_times = raw.times[bad_samp] - duration/2  ## center
+    bad_annots = mne.Annotations(
+        onset = bad_times,
+        duration = 1,
+        description = description
+    )
+
+    return bad_annots
 
 
 ## scratch

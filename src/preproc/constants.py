@@ -18,4 +18,13 @@ trigs = {
     58: "col_resp",
     18: "trial_stop"
 }
-good_subjects = ["e0010GP", "e0011XQ", "e0015TJ", "e0016YR", "e0017MC", "e0018RI"]
+inv_trigs = {v: k for k, v in trigs.items()}
+epoch_info = dict(
+    clip = dict(
+        tmin = -1,
+        tmax = 6,
+        metadata_tmin = -1,
+        metadata_tmax = 6,
+        row_events = "clip_start"
+    )
+)
