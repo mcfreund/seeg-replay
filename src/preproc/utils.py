@@ -107,7 +107,7 @@ def zapline_clean(
         raw,
         nremove = 1, nfft = 1024, nkeep = None, blocksize = None, show = False
         ):
-    ## from: https://mne.discourse.group/t/clean-line-noise-zapline-method-function-for-mne-using-meegkit-toolbox/7407/2
+    ## adapted from: https://mne.discourse.group/t/clean-line-noise-zapline-method-function-for-mne-using-meegkit-toolbox/7407/2
     ## uses: https://github.com/nbara/python-meegkit/blob/9204cfd8d596be479ddae932108445b4f560010a/meegkit/dss.py#L149
 
     cleaned_raw, artif_raw = raw.copy(), raw.copy()
@@ -266,21 +266,23 @@ def rereference(
 
 
 
-def _get_bad_samples(data, thresh, consensus):
-    #grad = np.gradient(data, axis = 1)
-    #g_zs = scipy.stats.zscore(grad, axis = 1)
-    h_zs = scipy.stats.zscore(data, axis = 1)
-    #is_bad = np.logical_or(np.abs(g_zs) > thresh, np.abs(h_zs > thresh))
-    is_bad = np.abs(h_zs) > thresh
+def _get_bad_samples(data, thresh = 20, consensus = 1, method = "mad"):
+    ''' adapted from https://github.com/Brainstorm-Program/Brainstorm-Challenge-PreProcessing/blob/main/artifact_rejection '''
+    if method == "mad":
+        mads = scipy.stats.median_abs_deviation(data, axis = 1, scale = "normal")  ## is of length n_channels
+        resids = (np.abs(data.T - np.median(data, axis = 1)) / mads).T
+        is_bad = resids > thresh
+    elif method == "zscore":
+        is_bad = np.abs(scipy.stats.zscore(data, axis = 1)) > thresh
     reject = np.sum(is_bad, axis = 0) > (consensus - 1)
     print("Marked " + str(round(np.mean(reject), 4)) + "% samples bad.")
 
     return reject
 
 
-def annot_bad_times(raw, thresh = 5, duration = 1, description = "BAD_outlier", consensus = 1):
+def annot_bad_times(raw, description = "BAD_outlier", thresh = 20, duration = 1, consensus = 1, method = "mad"):
 
-    bad_samp = _get_bad_samples(raw.get_data(), thresh = thresh, consensus = consensus)
+    bad_samp = _get_bad_samples(raw.get_data(), thresh = thresh, consensus = consensus, method = method)
     bad_times = raw.times[bad_samp] - duration/2  ## center
     bad_annots = mne.Annotations(
         onset = bad_times,
@@ -290,38 +292,3 @@ def annot_bad_times(raw, thresh = 5, duration = 1, description = "BAD_outlier", 
 
     return bad_annots
 
-
-## scratch
-
-# def load_events(
-#     subject, date, session,
-#     dir_orig_data = '/oscar/data/brainstorm-ws/seeg_data/Memory Task Data/Epilepsy/Monitoring/'
-#     ):
-#     """ loads all SEEG data from single session"""
-
-#     dir_orig_data_sess = os.path.join(dir_orig_data, date + "_" + subject + "_" + session)
-#     events_file = [os.path.join(dir_orig_data_sess, file) for file in os.listdir(dir_orig_data_sess) if 'Events.pbz2' in file]
-#     if len(events_file) > 1:
-#         raise Exception("Multiple event files found. " + events_file)
-#     events_data = load_pkl(events_file[0])
-    
-#     return events_data
-
-# # ## create stimulus channel for events:
-# # n_times = signals.shape[1]
-# # stim_data = np.zeros((1, n_times))
-# # for samp_i in range(n_times):
-# #     is_evt = events[:, 1] == samp_i
-# #     if np.sum(is_evt) == 1:
-# #         evt_i = np.where(is_evt)[0]
-# #         stim_data[0, samp_i] = events[evt_i, 0][0]
-# #     elif np.sum(is_evt) > 1:
-# #         raise Exception("multiple events during same sample ... issue?")
-
-# ## metadata:
-# n_channels = len(data) + 1 ## SEEG plus one stimulus channel
-# ch_names = chinfo["ch_name"].tolist() + ["stimuli"]
-# #ch_names = chinfo.loc[~chinfo["is_missing"], "ch_name"].tolist() + ["stimuli"]
-# ch_types = ["seeg"] * (n_channels - 1) + ["stim"]
-# info = mne.create_info(ch_names, ch_types = ch_types, sfreq = sfreq)
-# info["line_freq"] = line_freq

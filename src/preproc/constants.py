@@ -16,7 +16,8 @@ trigs = {
     38: "loc_resp",
     56: "col_start",
     58: "col_resp",
-    18: "trial_stop"
+    18: "trial_stop",
+    666: "BAD_outlier"
 }
 inv_trigs = {v: k for k, v in trigs.items()}
 epoch_info = dict(
@@ -28,3 +29,4 @@ epoch_info = dict(
         row_events = "clip_start"
     )
 )
+l_freq, h_freq = 0.5, 200  ## for bandpass

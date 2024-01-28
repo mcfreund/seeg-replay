@@ -19,8 +19,10 @@ https://brainstorm-program.github.io/brainstorm_challenge_2024/
 ```
 /oscar/data/brainstorm-ws/megagroup_data
 ```
-- subject subdirectories contain:
-  - raw timeseries (`_raw`) in two formats -- FIFF and brainvision
-  - anatomical info (`_chinfo.csv`)
-  - trial events / triggers (`_events.csv`)
-- epochs subdirectory: trial/event epoched data
+- subject subdirectories:
+  - raw timeseries `_raw` in two formats -- .fif (mne) and .set (eeglab)
+  - anatomical info `_chinfo.csv`
+  - trial events / triggers `_events.csv`
+- epochs subdirectory:
+  - trial/event-epoched timeseries, three formats (.fif, .set, .csv)
+  - trial metadata (e.g., behavior, task conditions etc; .csv)

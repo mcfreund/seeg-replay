@@ -29,8 +29,7 @@ def read_raw(i, d):
     fname_base = d["participant_id"] + "_" + d["session"]
 
     raw.save(os.path.join(dir_subj, d["session"], fname_base + "_raw.fif"))
-    mne.export.export_raw(os.path.join(dir_subj, d["session"], fname_base + "_raw.vhdr"), raw)  ## alt format
-    chinfo.to_csv(os.path.join(dir_subj, fname_base + "_chinfo.csv"))
+    chinfo.to_csv(os.path.join(dir_subj, d["participant_id"] + "_chinfo.csv"), index = False)
     
     return raw, chinfo
 

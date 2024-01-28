@@ -1,3 +1,8 @@
+## most of this script is adapted from: https://github.com/Brainstorm-Program/brainstorm_challenge_2024/blob/main/scripts/brainstorm_reorganize_data.py
+## it was modified to write a single csv file, `megagroup_dat/session_info.csv`, which contains info about each acquisition session, including the condition
+## (encoding, same-day recall, next-day recall) and the corresponding location of neural data files.
+## this csv is read by subsequent preprocessing/analysis scripts.
+
 import os
 import pandas as pd
 import numpy as np

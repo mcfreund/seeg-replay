@@ -11,10 +11,9 @@ do_mark_bads = True
 
 session_info = pd.read_csv(os.path.join(dir_data, "session_info.csv"))
 beh_data = pd.read_csv(os.path.join(dir_data, "behavioral_data.csv"))
-inv_trigs.update({"BAD_outlier": 666})  ## add code for outlier
 
 for i, d in session_info.iterrows():
-    if i == 10: break
+
     print("Processing subject " + d["participant_id"] + ", session " + d["session"] + "...")
     print("File " + str(i + 1) + " of " + str(len(session_info)))
 

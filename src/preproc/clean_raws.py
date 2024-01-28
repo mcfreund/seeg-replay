@@ -6,7 +6,7 @@ import pandas as pd
 from joblib import Parallel, delayed
 
 from src.preproc.utils import zapline_clean, rereference, annot_bad_times
-from src.preproc.constants import dir_data
+from src.preproc.constants import dir_data, l_freq, h_freq
 
 do_mark_bads = False
 rerun_subj = ["e0010GP", "e0011XQ", "e0013LW", "e0015TJ", "e0016YR", "e0017MC"]
@@ -20,6 +20,10 @@ if do_mark_bads:
     for i, d in session_info.iterrows():
         print("Marking bads for subject " + d["participant_id"] + ", session " + d["session"] + "...")
         print("File " + str(i + 1) + " of " + str(len(session_info)))
+
+        if not d["participant_id"] in rerun_subj:
+            print("Skipping this subject.")
+            continue
 
         ## get paths:
         dir_subj = os.path.join(dir_data, d["participant_id"])
@@ -75,15 +79,13 @@ for i, d in session_info.iterrows():
         drop_bads = True,
         selfref_first = False)
 
+    ## filter
+    raw_no60hz_ref_bp = raw_no60hz_ref.copy().filter(l_freq, h_freq)
+
     ## annotate bad time samples
     
-    bad_annots = annot_bad_times(raw_no60hz_ref, thresh = 12, duration = 6/1024)
-    raw_no60hz_ref.set_annotations(raw_no60hz_ref.annotations + bad_annots)
-
-    ## filter
-    l_freq = 0.5
-    h_freq = 200
-    raw_no60hz_ref_bp = raw_no60hz_ref.copy().filter(l_freq, h_freq)
+    bad_annots = annot_bad_times(raw_no60hz_ref_bp, thresh = 20, consensus = 1, method = "mad", duration = 6/1024)
+    raw_no60hz_ref_bp.set_annotations(raw_no60hz_ref_bp.annotations + bad_annots)
 
     ## save/update
     
@@ -91,6 +93,10 @@ for i, d in session_info.iterrows():
     raw_no60hz.save(os.path.join(dir_sess, fname_base + "_no60hz_raw.fif"), overwrite = True)
     raw_no60hz_ref.save(os.path.join(dir_sess, fname_base + "_no60hz_ref_raw.fif"), overwrite = True)
     raw_no60hz_ref_bp.save(os.path.join(dir_sess, fname_base + "_no60hz_ref_bp_raw.fif"), overwrite = True)
+
+    ## export to eeglab:
+    mne.export.export_raw(os.path.join(dir_sess, fname_base + "_raw.set"), raw, overwrite = True)
+    mne.export.export_raw(os.path.join(dir_sess, fname_base + "_no60hz_ref_bp_raw.set"), raw_no60hz_ref_bp, overwrite = True)
 
     ## save plots:
     raws = [raw, raw_no60hz, raw_no60hz_ref, raw_no60hz_ref_bp]
