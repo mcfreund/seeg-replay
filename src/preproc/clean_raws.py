@@ -1,3 +1,20 @@
+## This script is used to clean raw data and save the cleaned data to disk.
+## It also marks bad channels and bad time samples, and saves the bad channel info (_chinfo).
+## The cleaned data is saved in both .fif and .set formats, for use in MNE and EEGLAB, respectively.
+## The raw data is cleaned by marking bad channels, attenuating power-line noise, re-referencing, and bandpass filtering.
+## The cleaned data is also annotated with bad time samples, which are detected using a simple thresholding method.
+## Power-line noise is attenuated via zapline, which defines a spatial filter for powerline noise and removes it 
+## from the data. This requires specifying the number of (spatial) dimensions the noise spans. Default is 3.
+## If line-noise persists (see figs), you can increase the number of dimensions by editing the value in the
+## session_info.csv file.
+## Marking bad channels is done manually, by plotting the raw data and marking bad channels interactively via
+## mne popup window (best done via Qt backend). When a raw plot file is open, you can mark bad channels by
+## clicking on the channel trace or name in the plot window. CLose the plot to let the script proceed. 
+## The bad channels are then saved to the _chinfo file and the raw file.
+## NB: The best way to use mne's interactive graphical windows on oscar is (unfortunately) via virtual desktop
+##     on OOD. Displaying larger files in the popup window can be slow -- potentially plotting onnly a subset
+##     of timepoints or channels can speed this up.
+
 import os
 import re
 import mne

@@ -1,3 +1,11 @@
+## This script reads preprocessed raw timeseries data and epochs it into trials.
+## Epochs are saved as fif, h5, csv, and EEGlab set files -- one row per trial.
+## Epoch metadata, including trial number, and other triggers/events detected within the epoch, are
+## saved in a separate csv file -- one row per trial, in correspondance with seeg epoch files.
+## NB: For subsequent analyses using the epoched data, you can bind the behavioral data (behavioral_data.csv),
+##     with the seeg data using the trial_num column in the metadata file.
+## NB: There may be fewer trials in epochs than in behavioral data, if some trials were annotated as bad.
+
 import os
 import re
 import mne
@@ -7,11 +15,10 @@ from joblib import Parallel, delayed
 
 from src.preproc.constants import dir_data, inv_trigs, epoch_info
 
-do_mark_bads = True
-
 session_info = pd.read_csv(os.path.join(dir_data, "session_info.csv"))
 beh_data = pd.read_csv(os.path.join(dir_data, "behavioral_data.csv"))
 
+log = []
 for i, d in session_info.iterrows():
 
     print("Processing subject " + d["participant_id"] + ", session " + d["session"] + "...")
@@ -27,8 +34,7 @@ for i, d in session_info.iterrows():
     raw = mne.io.read_raw_fif(os.path.join(dir_sess, fname_base + "_no60hz_ref_bp_raw.fif"), preload = True)
     chinfo = pd.read_csv(os.path.join(dir_subj, d["participant_id"] + "_chinfo.csv"))
     events, event_id = mne.events_from_annotations(raw, event_id = inv_trigs)
-    print(raw.annotations)
-
+    
     for epoch_type in epoch_info.keys():
         
         ## create metadata df from events/trigs:
@@ -42,16 +48,19 @@ for i, d in session_info.iterrows():
         )
 
         ## subset beh_data to this subject and session:
-        beh_data_sub = beh_data.loc[(beh_data["participant_id"] == d["participant_id"]) & (beh_data["session"] == d["session"]), :]
+        is_sess = (beh_data["participant_id"] == d["participant_id"]) & (beh_data["session"] == d["session"])
+        beh_data_sub = beh_data.loc[is_sess, :]
 
-        ## bind columns of beh_data_sub and metadata, only if there are the same number of rows (otherwise, raise error)
+        ## bind columns of beh_data_sub and metadata, only if there are the same number of rows.
+        ## Otherwise, skip this subject*session, and raise error at end.
         if beh_data_sub.shape[0] != metadata.shape[0]:
-            raise ValueError("Number of rows in metadata and beh_data_sub do not match!")
-        metadata.reset_index(drop = True, inplace = True)
-        beh_data_sub.reset_index(drop = True, inplace = True)
-        metadata_new = pd.concat([metadata, beh_data_sub], axis = 1)
-        if metadata_new.shape[0] != metadata.shape[0]:
-            raise ValueError("Number of rows in metadata_new and metadata do not match!")
+            err_msg = "n trials: beh = " + str(beh_data_sub.shape[0]) + ", trigs = " + str(metadata.shape[0])
+            log.append(err_msg)
+            continue
+        else:
+            log.append("ok")
+        
+        metadata["trial_num"] = beh_data_sub["trial_num"].values  ## NB: ASSUMES BOTH BEH AND EPOCHS ARE CHRONOLOG.
         
         ## epoch and save
         epochs = mne.Epochs(
@@ -63,14 +72,25 @@ for i, d in session_info.iterrows():
             tmin = epoch_info[epoch_type]["tmin"],
             tmax = epoch_info[epoch_type]["tmax"],
             preload = True,
-            metadata = metadata_new,
-            reject_by_annotation = False
+            metadata = metadata,
+            reject_by_annotation = False  ## this rejects epochs that were annotated as "BAD_outlier" w/in clean_raws.py
             )
-        ## save for mne:
+        
+        ## save seeg data for mne:
         fname_epochs = os.path.join(dir_out, fname_base + "_no60hz_ref_bp_" + epoch_type + "-epo.fif")
         epochs.save(fname_epochs, overwrite = True)
+        
+        ## save metadata
+        metadata.to_csv(fname_epochs.replace(".fif", "-metadata.csv"))
+        
+        ## export seeg data to h5, csv, eeglab:
+        epochs_df = epochs.to_data_frame()
+        epochs_df.to_csv(fname_epochs.replace("fif", "csv"))
+        epochs_df.to_hdf(fname_epochs.replace("fif", "h5"), key = "epochs")
+        epochs.export(fname_epochs.replace("fif", "set"), overwrite = True)  ## eeglab
+        
 
-        ## export to eeglab, csv:
-        epochs.export(fname_epochs.replace("fif", "eeglab"), overwrite = True)
-        epochs.to_data_frame().to_csv(fname_epochs.replace("fif", "csv"))
-        epochs.metadata.to_csv(fname_epochs.replace("fif", "_metadata.csv"))
+session_info['log'] = log
+print(session_info)
+if any([x != "ok" for x in log]):
+    raise ValueError("Some epochs were misaligned!")

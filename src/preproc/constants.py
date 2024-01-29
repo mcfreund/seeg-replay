@@ -22,11 +22,11 @@ trigs = {
 inv_trigs = {v: k for k, v in trigs.items()}
 epoch_info = dict(
     clip = dict(
-        tmin = -1,
-        tmax = 6,
-        metadata_tmin = -1,
-        metadata_tmax = 6,
-        row_events = "clip_start"
+        tmin = -1,  ## epoch start time (s), rel. row_events
+        tmax = 6,  ## stop time
+        metadata_tmin = -1,  ## how far BACK (s) to look for co-localized triggers/events (cols in metadata)?
+        metadata_tmax = 360,
+        row_events = "clip_start"  ## which event/trigger to use to define the start of a new row/epoch?
     )
 )
 l_freq, h_freq = 0.5, 200  ## for bandpass
