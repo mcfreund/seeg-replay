@@ -1,0 +1,145 @@
+%reset -f 
+
+import torch
+import models
+import scipy  as sp
+import numpy  as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import scipy as sp
+
+from time  import time
+
+def aggregate_predictions(npts, nprds, stride, w_len_pred, pred):
+    # Aggregate prediction
+    agg = np.zeros(npts)
+    cnt = np.zeros(npts)
+
+    # Loop through predictions
+    cntvec = np.ones(w_len_pred)
+    for i in range(nprds):
+        
+        # Determine where this prediction began and ended
+        beg = stride*i
+        end = stride*i + w_len_pred
+
+        # Add this prediction to the correct aggregation 
+        agg[beg:end] += pred[i,:]
+        cnt[beg:end] += cntvec
+
+    # Normalize
+    for i in range(npts):
+        agg[i] = agg[i]/cnt[i] if cnt[i] > 0 else agg[i]
+
+    # Return
+    return agg
+
+
+def chunk_data(slen, stride, w_len_hist, w_len_pred, X, Y):
+    # Get number of channels in predictor
+    nch = X.shape[1]
+
+    # Initialize input, target data arrays e.g., (dim_batch, dim_input)
+    nclps  = int(np.floor((slen - w_len_hist - w_len_pred) / stride) + 1)
+    inputs = torch.zeros(  nclps, w_len_hist*nch, device = 'cuda')
+    targs  = torch.zeros(  nclps, w_len_pred    , device = 'cuda')
+
+    # Copy data chunks
+    for t in range(0, nclps):
+        ind_beg = t*stride
+        ind_end = t*stride + w_len_hist
+        ind_prd = t*stride + w_len_hist + w_len_pred
+
+        # Flatten targets in column major order (electrode contiguity)
+        inputs[t, :] = torch.tensor(X[ind_beg:ind_end,:].flatten('F'))
+        targs[ t, :] = torch.tensor(Y[ind_end:ind_prd])
+
+    # Return input and target data
+    return inputs, targs, nclps
+
+# Interactive plotting
+plt.ion()
+
+# Load ECOG data
+dir  = '/home/dan/projects/work/megagroup_data/epochs/e0010GP/Encoding/'
+subj = pd.read_csv(dir + 'e0010GP_Encoding_no60hz_ref_bp_clip-epo.csv', sep=',')
+
+# Number of electrodes to use as predictors
+nch = 10
+
+# Use nch electrodes to predict 1 held out
+X = np.array(subj.iloc[:,4:4+nch])
+Y = np.array(subj.iloc[:,4] )
+
+
+# Series length (number of samples)
+slen = Y.shape[0]
+
+# Window lengths, stride length (history and prediction)
+w_len_hist = 5000
+w_len_pred = 500
+stride     = 10
+
+# Chunk the data
+inputs, targs, nclps = chunk_data(slen, stride, w_len_hist, w_len_pred, X, Y)
+
+# Held out fraction, max clip index for training
+hof    = 0.2
+cutoff = int(np.floor(nclps*(1-hof)))
+
+
+# Get prediction model
+net = models.MLP([w_len_hist*nch, 5*w_len_pred, w_len_pred], actfns = ['gelu', 'tanh'])
+net.to('cuda')
+
+# Train the model
+models.train(net, inputs[:cutoff,:], targs[:cutoff,:], lr = 0.001, nepochs = 2000)
+
+
+# Training predictions for checking accuracy
+pred = net(inputs[:cutoff,:]).cpu().detach().numpy()
+
+# Re-aggregate them into single series
+nprds = pred.shape[0]
+npts  = w_len_pred + stride*(nprds - 1)
+agg   = aggregate_predictions(npts, nprds, stride, w_len_pred, pred)
+trg   = aggregate_predictions(npts, nprds, stride, w_len_pred, targs[:cutoff,:].cpu().detach().numpy())
+
+# Plot Training
+plt.figure()
+plt.plot(agg,alpha = 0.6)
+plt.plot(trg,alpha = 0.6)
+plt.title('Train')
+
+# Correlations
+cc = np.zeros(nprds)
+for i in range(nprds):
+    cc[i] = np.corrcoef(pred[i,:], targs[i,:].cpu().detach().numpy())[0,1]
+
+plt.figure()
+plt.plot(cc)
+plt.title('Train Corrs')
+
+# Training predictions for checking accuracy
+pred = net(inputs[cutoff:,:]).cpu().detach().numpy()
+
+# Re-aggregate them into single series
+nprds = pred.shape[0]
+npts  = w_len_pred + stride*(nprds - 1)
+agg   = aggregate_predictions(npts, nprds, stride, w_len_pred, pred)
+trg   = aggregate_predictions(npts, nprds, stride, w_len_pred, targs[cutoff:,:].cpu().detach().numpy())
+
+# Plot Training
+plt.figure()
+plt.plot(agg)
+plt.plot(trg)
+plt.title('Test')
+
+# Correlations
+cc = np.zeros(nprds)
+for i in range(nprds):
+    cc[i] = np.corrcoef(pred[i,:], targs[i,:].cpu().detach().numpy())[0,1]
+
+plt.figure()
+plt.plot(cc)
+plt.title('Test Corrs')
