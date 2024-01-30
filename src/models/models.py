@@ -101,9 +101,24 @@ class AE(torch.nn.Module):
         # Return output
         return x*std + offset
 
+class TimeSeriesTransformerDecoder(nn.Module):
+    def __init__(self, input_size, output_size, d_model, nhead, num_layers, device):
+        super(TimeSeriesTransformerDecoder, self).__init__()
 
+        # self.embedding = nn.Embedding(input_size, d_model)
+        self.transformer_decoder = nn.TransformerDecoder(
+            nn.TransformerDecoderLayer(d_model=d_model, nhead=nhead),
+            num_layers=num_layers
+        )
+        self.embed = nn.Linear(input_size,d_model)
+        self.unembed = nn.Linear(d_model, output_size)
+        self.memory = torch.zeros((1,d_model), device=device)
 
-
+    def forward(self, tgt):
+        tgt = self.embed(tgt)
+        output = self.transformer_decoder(tgt, self.memory)
+        output = self.unembed(output)
+        return output
 
 def train(model, inputs, targs, lr = 0.001, nepochs = 2000):
     # Initialize the loss function and optimizer
