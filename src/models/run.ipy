@@ -1,4 +1,4 @@
-# %reset -f 
+%reset -f 
 
 import torch
 import models
@@ -8,22 +8,27 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 from time  import time
+from scipy.stats import norm
 
-def aggregate_predictions(npts, nprds, stride, w_len_pred, pred):
+def aggregate_predictions(npts, nprds, stride, pred):
+
+    # How far out to aggregate over? (min should be stride)
+    fwd_samples = 10
+
     # Aggregate prediction
     agg = np.zeros(npts)
     cnt = np.zeros(npts)
 
     # Loop through predictions
-    cntvec = np.ones(w_len_pred)
+    cntvec = np.ones(fwd_samples)
     for i in range(nprds):
         
         # Determine where this prediction began and ended
         beg = stride*i
-        end = stride*i + w_len_pred
+        end = stride*i + fwd_samples
 
         # Add this prediction to the correct aggregation 
-        agg[beg:end] += pred[i,:]
+        agg[beg:end] += pred[i,0:fwd_samples]
         cnt[beg:end] += cntvec
 
     # Normalize
@@ -34,17 +39,19 @@ def aggregate_predictions(npts, nprds, stride, w_len_pred, pred):
     return agg
 
 
-def chunk_data(slen, stride, w_len_hist, w_len_pred, X, Y, device="cuda"):
-    # Get number of channels in predictor
-    nch = X.shape[1]
+def chunk_data(dps, data):
+
+    # Simple referencing
+    slen       = data.slen
+    nch        = dps.nch
+    stride     = dps.stride
+    w_len_hist = dps.w_len_hist
+    w_len_pred = dps.w_len_pred
 
     # Initialize input, target data arrays e.g., (dim_batch, dim_input)
     nclps  = int(np.floor((slen - w_len_hist - w_len_pred) / stride) + 1)
-    inputs = torch.zeros(  nclps, w_len_hist*nch, device = device)
-    targs  = torch.zeros(  nclps, w_len_pred    , device = device)
-    #inputs = torch.zeros(  nclps, w_len_hist*nch)
-    #targs  = torch.zeros(  nclps, w_len_pred)
-    # TODO: uncomment above
+    inputs = torch.zeros(  nclps, w_len_hist*nch)
+    targs  = torch.zeros(  nclps, w_len_pred    )
 
     # Copy data chunks
     for t in range(0, nclps):
@@ -53,103 +60,111 @@ def chunk_data(slen, stride, w_len_hist, w_len_pred, X, Y, device="cuda"):
         ind_prd = t*stride + w_len_hist + w_len_pred
 
         # Flatten targets in column major order (electrode contiguity)
-        inputs[t, :] = torch.tensor(X[ind_beg:ind_end,:].flatten('F'), device=device)
-        targs[ t, :] = torch.tensor(Y[ind_end:ind_prd], device=device)
+        inputs[t, :] = torch.tensor(data.X[ind_beg:ind_end,:].flatten('F'))
+        targs[ t, :] = torch.tensor(data.Y[ind_end:ind_prd])
 
     # Return input and target data
     return inputs, targs, nclps
 
+class DataParams:
+    def __init__(self, nch = 1, w_len_hist = 5000, w_len_pred = 500, stride = 10):
+        # Window lengths, stride length (history and prediction)
+        self.w_len_hist = w_len_hist
+        self.w_len_pred = w_len_pred
+        self.stride     = stride
+        self.nch        = nch
+        self.nclps      = None
+
+class DataClass:
+    def __init__(self, dps):
+        # Load ECOG data
+        #dir = '/oscar/data/brainstorm-ws/megagroup_data/epochs/e0010GP/Encoding/'
+        self.dir  = '/home/dan/projects/work/megagroup_data/epochs/e0010GP/Encoding/'
+        self.subj = pd.read_csv(self.dir + 'e0010GP_Encoding_no60hz_ref_bp_clip-epo.csv', sep=',')
+
+        # Use nch electrodes to predict 1 held out
+        self.X = np.array(self.subj.iloc[:,4:(4 + dps.nch)])
+        self.Y = np.array(self.subj.iloc[:,4] )
+
+        # Series length (number of samples)
+        self.slen = self.Y.shape[0]
+
+def to_device(inputs, targs, net):
+    inputs.to(device)
+    targs.to(device)
+    net.to(device)
+
+def predict(net, inputs, targs, dps, plot = True):
+
+    # Training predictions for checking accuracy
+    pred = net(inputs).cpu().detach().numpy()
+
+    # Re-aggregate them into single series
+    nprds = pred.shape[0]
+    npts  = dps.w_len_pred + dps.stride*(nprds - 1)
+    agg   = aggregate_predictions(npts, nprds, dps.stride, pred)
+    trg   = aggregate_predictions(npts, nprds, dps.stride, targs.cpu().detach().numpy())
+
+    # Figures
+    if plot:
+        # Plot Training
+        plt.figure()
+        plt.plot(agg, alpha = 0.6)
+        plt.plot(trg, alpha = 0.6)
+        plt.title('Predictions')
+
+        # Correlations
+        cc = np.zeros(nprds)
+        for i in range(nprds):
+            cc[i] = np.corrcoef(pred[i,:], targs[i,:].cpu().detach().numpy())[0,1]
+
+        plt.figure()
+        plt.plot(cc)
+        plt.title('Corrs')
+
+    return agg, trg
+
+
 # Interactive plotting
 plt.ion()
 
-# Load ECOG data
-dir  = '/oscar/data/brainstorm-ws/megagroup_data/epochs/e0010GP/Encoding/'
-subj = pd.read_csv(dir + 'e0010GP_Encoding_no60hz_ref_bp_clip-epo.csv', sep=',')
-
-# Number of electrodes to use as predictors
-nch = 10
-
-# Use nch electrodes to predict 1 held out
-X = np.array(subj.iloc[:,4:4+nch])
-Y = np.array(subj.iloc[:,4] )
+# Get device to use
+#device = 'cuda' if torch.cuda.is_available() else 'cpu'
+device = 'cpu'
 
 
-# Series length (number of samples)
-slen = Y.shape[0]
+# Get data
+dps  = DataParams()
+data = DataClass(dps)
 
-# Window lengths, stride length (history and prediction)
-w_len_hist = 5000
-w_len_pred = 500
-stride     = 10
-DEVICE = "cuda"
-
-# Chunk the data
-inputs, targs, nclps = chunk_data(slen, stride, w_len_hist, w_len_pred, X, Y, device=DEVICE)
+# Chunk it
+inputs, targs, dps.nclps = chunk_data(dps, data)
 
 # Held out fraction, max clip index for training
 hof    = 0.2
-cutoff = int(np.floor(nclps*(1-hof)))
+cutoff = int(np.floor(dps.nclps*(1-hof)))
 
+# Model dimensions
+dim_in  = dps.w_len_hist * dps.nch
+dim_out = dps.w_len_pred
+dim_emb = 64
+nhead   = 4
+nlayers = 6
 
-# Get prediction model
-# net = models.MLP([w_len_hist*nch, 5*w_len_pred, w_len_pred], actfns = ['gelu', 'tanh'])
-# TODO: Might we want to reconsider how we pass data to the model? I.e. not flattening the data
-input_size = w_len_hist * nch
-output_size = w_len_pred
-d_model = 64 # 512 # Replace with the desired embedding size
-nhead = 4 # 8 # Number of attention heads
-num_layers = 6  # Number of decoder layers
-net = models.TimeSeriesTransformerDecoder(input_size, output_size, d_model, nhead, num_layers, DEVICE)
-net.to('cuda')
+# Initialize network
+net = models.Transformer(dim_in, dim_out, dim_emb, nhead, nlayers)
+
+# Make sure everything is on the same device
+to_device(inputs, targs, net)
 
 # Train the model
-models.train(net, inputs[:cutoff,:], targs[:cutoff,:], lr = 0.001, nepochs = 2000)
+inputs = inputs[0:100,:]
+targs  = targs[0:100,:]
+models.train(net, inputs[:cutoff,:], targs[:cutoff,:], lr = 0.001, nepochs = 500)
 
 
-# Training predictions for checking accuracy
-pred = net(inputs[:cutoff,:]).cpu().detach().numpy()
+# Predictions on training set
+agg, trg = predict(net, inputs[:cutoff,:], targs[:cutoff,:], dps)
 
-# Re-aggregate them into single series
-nprds = pred.shape[0]
-npts  = w_len_pred + stride*(nprds - 1)
-agg   = aggregate_predictions(npts, nprds, stride, w_len_pred, pred)
-trg   = aggregate_predictions(npts, nprds, stride, w_len_pred, targs[:cutoff,:].cpu().detach().numpy())
-
-# Plot Training
-plt.figure()
-plt.plot(agg,alpha = 0.6)
-plt.plot(trg,alpha = 0.6)
-plt.title('Train')
-
-# Correlations
-cc = np.zeros(nprds)
-for i in range(nprds):
-    cc[i] = np.corrcoef(pred[i,:], targs[i,:].cpu().detach().numpy())[0,1]
-
-plt.figure()
-plt.plot(cc)
-plt.title('Train Corrs')
-
-# Training predictions for checking accuracy
-pred = net(inputs[cutoff:,:]).cpu().detach().numpy()
-
-# Re-aggregate them into single series
-nprds = pred.shape[0]
-npts  = w_len_pred + stride*(nprds - 1)
-agg   = aggregate_predictions(npts, nprds, stride, w_len_pred, pred)
-trg   = aggregate_predictions(npts, nprds, stride, w_len_pred, targs[cutoff:,:].cpu().detach().numpy())
-
-# Plot Training
-plt.figure()
-plt.plot(agg)
-plt.plot(trg)
-plt.title('Test')
-
-# Correlations
-cc = np.zeros(nprds)
-for i in range(nprds):
-    cc[i] = np.corrcoef(pred[i,:], targs[i,:].cpu().detach().numpy())[0,1]
-
-plt.figure()
-plt.plot(cc)
-plt.title('Test Corrs')
+# Predictions on held out set
+#agg, trg = predict(net, inputs[cutoff:,:], targs[cutoff:,:], dps)

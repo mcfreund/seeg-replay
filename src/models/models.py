@@ -9,6 +9,12 @@ from time  import time
 
 import torch
 from torch import nn, Tensor
+import numpy as np
+from scipy.stats import norm
+import torch
+import torch.nn as nn
+import matplotlib.pyplot as plt
+
 
 class MLP(torch.nn.Module):
     def __init__(self, dims, actfns = [], bias = [], use_smax = False):
@@ -101,24 +107,165 @@ class AE(torch.nn.Module):
         # Return output
         return x*std + offset
 
-class TimeSeriesTransformerDecoder(nn.Module):
-    def __init__(self, input_size, output_size, d_model, nhead, num_layers, device):
-        super(TimeSeriesTransformerDecoder, self).__init__()
 
-        # self.embedding = nn.Embedding(input_size, d_model)
+class Transformer(nn.Module):
+    def __init__(self, dim_in, dim_out, dim_emb, nhead, nlayers):
+        super(Transformer, self).__init__()
+
+        # Define some input kernel parameters
+        nkers   = 10
+        kstride = 100
+        hlens   = [dim_in  for i in range(nkers)]
+        strides = [kstride for i in range(nkers)]
+        kwidths = range(100, 100*(nkers+1), 100)
+
+        # Calculate tokenizer output size
+        self.dim_token_out = int(dim_in/kstride * nkers)
+
+        # Input kernels themselves
+        self.kernel_blocks = KernelBlocks(hlens = hlens, strides = strides, kwidths = kwidths)
+
+        # Define tokenizer based on kernels
+        self.tokenizer = PseudoTokenizer(self.kernel_blocks)
+
+        # Embedding layer
+        self.embed = nn.Linear(self.dim_token_out, dim_emb)
+
+        # Transformer
+        self.memory = torch.zeros((1,dim_emb))
         self.transformer_decoder = nn.TransformerDecoder(
-            nn.TransformerDecoderLayer(d_model=d_model, nhead=nhead),
-            num_layers=num_layers
+            nn.TransformerDecoderLayer(d_model = dim_emb, nhead = nhead),
+            num_layers = nlayers
         )
-        self.embed = nn.Linear(input_size,d_model)
-        self.unembed = nn.Linear(d_model, output_size)
-        self.memory = torch.zeros((1,d_model), device=device)
 
-    def forward(self, tgt):
-        tgt = self.embed(tgt)
-        output = self.transformer_decoder(tgt, self.memory)
-        output = self.unembed(output)
-        return output
+        # Readout
+        self.unembed = nn.Linear(dim_emb, dim_out)
+
+    def forward(self, input):
+        # Convert input to tokens
+        tokens = self.tokenizer.tokenize(input)
+        tokens = torch.concatenate(tokens, axis=1)
+
+        # Token embeddings
+        latent = self.embed(tokens)
+
+        # Transformer
+        output = self.transformer_decoder(latent, self.memory)
+
+        # Predictions
+        return self.unembed(output)
+
+
+
+class KernelBlocks(nn.Module):
+    def __init__(self, hlens = [5000], strides = [10], kwidths = [200]):
+        super().__init__()
+
+        # For each kernel: history length, stride, kernel width
+        self.nkers   = len(hlens)
+        self.hlens   = hlens
+        self.strides = strides
+        self.kwidths = kwidths
+
+        # Define envelope for localizing each kernel
+        self.envs = []
+        for i in range(0, self.nkers):
+            self.envs.append(norm.pdf(np.linspace(-3, 3, kwidths[i]), loc = 0, scale = 1))
+
+        # Kernels. Conv1D requires dims (channels, channels/group, kwidth)
+        self.kernels = []
+        for i in range(0, self.nkers):
+            self.kernels.append(torch.randn(1,1, kwidths[i]))
+
+        # Restrict kernels to envelopes
+        self.trunc_to_env()
+
+
+    # Call for coercing kernels into envelopes
+    def trunc_to_env(self):
+        
+        # For every kernel
+        for i in range(self.nkers):
+
+            # Loop over kernel dim and truncate
+            for j in range(0, self.kwidths[i]):
+            
+                # Ugly indexing & probably inefficient.
+                # Blame it on the bossa nova.
+                if self.kernels[i][0,0,j] >= self.envs[i][j]:
+                    self.kernels[i][0,0,j] = self.envs[i][j]
+                elif self.kernels[i][0,0,j] <= -self.envs[i][j]:
+                    self.kernels[i][0,0,j] = -self.envs[i][j]
+
+
+#
+class PseudoTokenizer(nn.Module):
+    def __init__(self, kblocks):
+        super().__init__()
+
+        # Probably a better way to do this
+        self.nkers   = kblocks.nkers
+        self.hlens   = kblocks.hlens
+        self.strides = kblocks.strides
+        self.kwidths = kblocks.kwidths
+        self.envs    = kblocks.envs
+        self.kernels = kblocks.kernels
+
+    # Method for applying kernels
+    def tokenize(self, input):
+        # Inefficient
+        nbatch, hlen = input.shape
+        input  = input.reshape(nbatch, 1, hlen)
+        tokens = []
+
+        # Apply kernels
+        for i in range(0, self.nkers):
+            # Pad to keep appropriate width 
+            pad = int(self.kwidths[i]/2)-1
+
+            # Convolution 
+            tokens.append(torch.nn.functional.conv1d(
+                input[:,:,-self.hlens[i]:], 
+                self.kernels[i], 
+                stride = self.strides[i], 
+                padding = pad
+                ).squeeze())
+
+        return tokens
+
+
+class FrameExpander(nn.Module):
+    def __init__(self, kblocks, dim_hid):
+        super().__init__()
+
+        # Probably a better way to do this
+        self.nkers   = kblocks.nkers
+        self.hlens   = kblocks.hlens
+        self.strides = kblocks.strides
+        self.kwidths = kblocks.kwidths
+        self.envs    = kblocks.envs
+        self.kernels = kblocks.kernels
+
+        # Output from transformer
+        self.dim_hid = dim_hid
+
+        # Layer for getting frame vector coefficients
+        ceofs = torch.Linear(dim_hid, 500, bias=True)
+
+    # Frame expansion
+    def forward(self, input):
+
+        # Frame coefficients
+        y = self.coefs(input)
+
+        # Aggregate
+        z = torch.zeros(self.nkers)
+        for i in range(0, self.nkers):
+            z[:self.kwidths[i]] += y[i]*self.kernels[i]
+
+        return z
+
+
 
 def train(model, inputs, targs, lr = 0.001, nepochs = 2000):
     # Initialize the loss function and optimizer
