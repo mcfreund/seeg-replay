@@ -4,7 +4,7 @@
 % Last update: Jan 25, 2024
 % Description: Reformats relevant behavioral data into tabular format
 
-clear all;
+%clear all;
 
 function [] = restructure_behavioral_data()
 
@@ -135,7 +135,6 @@ function [] = restructure_behavioral_data()
                end
      
                if isfield(eval(trial_str).UserVars, 'error_color')
-                    % Convert from [-2 pi, 2 pi] radians to [-1,1]
                     temp_row{6}= rads_to_interval( eval(trial_str).UserVars.error_color );
                else
                     temp_row{6}=nan;
@@ -160,13 +159,13 @@ function [] = restructure_behavioral_data()
                end
 
                if isfield(eval(trial_str).UserVars, 'chosen_color')
-                    temp_row{10}=eval(trial_str).UserVars.chosen_color;
+                    temp_row{10}=rads_to_interval(eval(trial_str).UserVars.chosen_color);
                else
                     temp_row{10}=nan;
                end
 
                if isfield(eval(trial_str).UserVars, 'chosen_position')
-                    temp_row{11}=eval(trial_str).UserVars.chosen_position;
+                    temp_row{11}= rads_to_interval(eval(trial_str).UserVars.chosen_position);
                else
                     temp_row{11}=nan;
                end
@@ -205,8 +204,8 @@ function [var] = rads_to_interval(var)
      
      % Convert from [-1, 1] to [-0.5, 0.5]
      if var > 0.5
-          var =  1 - var
-     elseif temp_row{6} < -0.5
-          var = -1 - var
+          var =  1 - var;
+     elseif var < -0.5
+          var = -1 - var;
      end
 end
