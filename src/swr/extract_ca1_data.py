@@ -38,15 +38,16 @@ def helper_chinfo(df_chinfo, contact_name):
 
 def helper_data(data, contact_name):
     '''
-    Extract appropriate contact data from full tsd
+    Extract appropriate full tsd and tvec from 
+    appropriate channel
     '''
     contact_misnamed = contact_name[:1] + contact_name[2:] # some contacts lost the hyphen in their name
     if contact_name in data.ch_names:
-        return data[contact_name][0]
+        return data[contact_name]
     elif contact_misnamed in data.ch_names:
-        return data[contact_misnamed][0]
+        return data[contact_misnamed]
     else:
-        return ["EMPTY"]
+        return (["EMPTY"], ["EMPTY"])
 
 def get_data(file_suffix,data_path,folder,participants,contacts,triplet=True):
     '''
@@ -66,7 +67,7 @@ def get_data(file_suffix,data_path,folder,participants,contacts,triplet=True):
             # get tsd file 
             file = data_path + participant + '/' + folder + '/' + participant + file_suffix
             if file.endswith('.fif'):
-                data = mne.io.read_raw_fif(file)
+                data_raw = mne.io.read_raw_fif(file)
 
             # get info for all channels for this participant
             df_chinfo = pd.DataFrame(pd.read_csv(f"{data_path}{participant}/{participant}_chinfo.csv"))
@@ -85,7 +86,7 @@ def get_data(file_suffix,data_path,folder,participants,contacts,triplet=True):
 
                 # save contact name and time series data
                 collect_channel["ca1_contact"] = dict()
-                collect_channel["ca1_contact"]["data"] = helper_data(data, contact)
+                collect_channel["ca1_contact"]["data"], collect_channel["ca1_contact"]["tvec"]  = helper_data(data_raw, contact)
                 collect_channel["ca1_contact"]["contact_name"] = contact
                 collect_channel["ca1_contact"]["channel_info"] = helper_chinfo(df_chinfo,contact)
 
@@ -93,12 +94,12 @@ def get_data(file_suffix,data_path,folder,participants,contacts,triplet=True):
                 # add surrounding electrodes if requested
                 if triplet:
                     collect_channel["contact_below"] = dict()
-                    collect_channel["contact_below"]["data"] = helper_data(data, contact_below)
+                    collect_channel["contact_below"]["data"], collect_channel["contact_below"]["tvec"] = helper_data(data_raw, contact_below)
                     collect_channel["contact_below"]["contact_name"] = contact_below
                     collect_channel["contact_below"]["channel_info"] = helper_chinfo(df_chinfo,contact_below)
 
                     collect_channel["contact_above"] = dict()
-                    collect_channel["contact_above"]["data"] = helper_data(data, contact_above)
+                    collect_channel["contact_above"]["data"], collect_channel["contact_above"]["tvec"] = helper_data(data_raw, contact_above)
                     collect_channel["contact_above"]["contact_name"] = contact_above
                     collect_channel["contact_above"]["channel_info"] = helper_chinfo(df_chinfo,contact_above)
 
