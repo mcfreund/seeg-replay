@@ -5,6 +5,9 @@ import matplotlib
 from scipy.io import savemat
 
 def get_contacts():
+    '''
+    Get CA1 contacts for all participants
+    '''
     mem_path = '/oscar/data/brainstorm-ws/seeg_data/Memory Task Data/'
     img_path = 'Imaging/Epilepsy/'
     participants = os.listdir(os.path.join(mem_path,img_path))
@@ -22,12 +25,20 @@ def get_contacts():
 
 
 def get_channel_info(data_path,folder,participant):
+    '''
+    Extract info from channel info (produced by src/preproc/clean_raws.py)
+    '''
     suffix = '_chinfo.csv'
     df = pd.read_csv(f"{data_path}{participant}/{participant}{suffix}")
+    print(df)
+    print(df[['contact','was_rereferenced']])
     return df[['contact','was_rereferenced']]
 
 
 def get_data(file_suffix,data_path,folder,participants):
+    '''
+    Extracts CA1 contacts per participant 
+    '''
     data_dict = dict()
     for participant in participants:
         channels = dict()
@@ -52,15 +63,24 @@ def get_data(file_suffix,data_path,folder,participants):
     return data_dict
 
 def helper(data, contact_name):
-        contact_misnamed = contact_name[:1] + contact_name[2:] # some contacts lost the hyphen in their name
-        if contact_name in data.ch_names:
-            return data[contact_name][0]
-        elif contact_misnamed in data.ch_names:
-            return data[contact_misnamed][0]
-        else:
-            return 0
+    '''
+    Extract appropriate contact from data
+    '''
+    contact_misnamed = contact_name[:1] + contact_name[2:] # some contacts lost the hyphen in their name
+    if contact_name in data.ch_names:
+        return data[contact_name][0]
+    elif contact_misnamed in data.ch_names:
+        return data[contact_misnamed][0]
+    else:
+        return [0]
 
 def get_data_triplets(file_suffix,data_path,folder,participants):
+    '''
+    Extracts CA1 contacts per participant and corresponding electrodes
+    above and below in depth on the lead
+
+    Saves to dictionary electrode name and 
+    '''
     data_dict = dict()
     for participant in participants:
         channels = dict()
@@ -72,14 +92,27 @@ def get_data_triplets(file_suffix,data_path,folder,participants):
             info = get_channel_info(data_path,folder,participant)
             col = 'was_rereferenced'
             for contact in contacts[participant]:
+
+                # extract electrode names
                 contact_misnamed = contact[:1] + contact[2:] # some contacts lost the hyphen in their name
-                triplet = [None,None,None]
+                triplet = dict()
                 contact_num = int(contact[-1:])
                 contact_below = contact[:-1] + str(contact_num-1)
                 contact_above = contact[:-1] + str(contact_num+1)
-                triplet[0] = helper(data, contact_below)
-                triplet[1] = helper(data, contact)
-                triplet[2] = helper(data, contact_above)
+
+                # save contact name and time series data
+                triplet["contact_below"] = dict()
+                triplet["contact_below"]["data"] = helper(data, contact_below)
+                triplet["contact_below"]["contact_name"] = contact_below
+
+                triplet["ca1_contact"] = dict()
+                triplet["ca1_contact"]["data"] = helper(data, contact)
+                triplet["ca1_contact"]["contact_name"] = contact
+
+                triplet["contact_above"] = dict()
+                triplet["contact_above"]["data"] = helper(data, contact_above)
+                triplet["contact_above"]["contact_name"] = contact_above
+
                 channels[contact_misnamed] = triplet
             print(f"\n\nChannels: {triplet}\n\n")
             data_dict[participant] = channels
@@ -89,17 +122,19 @@ def get_data_triplets(file_suffix,data_path,folder,participants):
             print(f"Participant {participant} lacks one of contacts {contact_list} in data {file}")
     return data_dict
 
+# file paths
 data_path = '/oscar/data/brainstorm-ws/megagroup_data/'
 suff = '_Encoding_no60hz_ref_bp_raw.fif'
 folder = 'Encoding'
+
+# get contact information and participant list 
 contacts = get_contacts()
 participants = list(contacts.keys())
 participant = participants[0]
-#info = pd.read_csv(f"{data_path}{participant}/{participant}_chinfo.csv")
-#data_dict = get_data(file_suffix=suff,data_path=data_path,folder=folder,participants=participants)
+
+# extract time series data
 triplet_dict = get_data_triplets(file_suffix=suff,data_path=data_path,folder=folder,participants=participants)
-print(contacts)
-#print(data_dict)
-#print(triplet_dict)
-mdic = {"a": triplet_dict, "label": "experiment"}
+
+# save in matlab format
+mdic = {"data": triplet_dict, "data_path": data_path}
 savemat("matlab_matrix.mat", mdic)
