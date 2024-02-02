@@ -130,6 +130,6 @@ data_dict = get_data(file_suffix=suff,data_path=data_path, \
         triplet = True)
 
 # save in matlab format
-mdic = {"data": data_dict, "data_path": data_path, \
+mdic = {"data": data_dict, "data_path": data_path, "data_file": suff, \
     "contacts": contacts, "participants": participants}
 savemat("matlab_matrix.mat", mdic)
