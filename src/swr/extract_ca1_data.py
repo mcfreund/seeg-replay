@@ -24,6 +24,10 @@ def get_contacts():
     return contacts
 
 def cross_validate_contacts(contacts, data_dict):
+    '''
+    Checks contacts against data_dict to get list of 
+    valid contacts for analysis
+    '''
     usable_contacts = {}
     for participant in contacts.keys():
         contact_sublist = []
@@ -35,7 +39,6 @@ def cross_validate_contacts(contacts, data_dict):
                 contact_misnamed = contact
             if type(data_channels[contact_misnamed]['ca1_contact']['data']) != list:
                 contact_sublist.append(contact)
-            print(data_channels[contact_misnamed]['ca1_contact']['data'])
         usable_contacts[participant] = contact_sublist
     return usable_contacts
 
