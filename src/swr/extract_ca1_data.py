@@ -23,6 +23,23 @@ def get_contacts():
             print(f"File {imaging_file} lacks a column for contact Location")
     return contacts
 
+def cross_validate_contacts(contacts, data_dict):
+    usable_contacts = {}
+    for participant in contacts.keys():
+        contact_sublist = []
+        data_channels = data_dict[participant]
+        for contact in contacts[participant]:
+            if contact.index('-') != -1:
+                contact_misnamed = contact[:1] + contact[2:]
+            else:
+                contact_misnamed = contact
+            if type(data_channels[contact_misnamed]['ca1_contact']['data']) != list:
+                contact_sublist.append(contact)
+            print(data_channels[contact_misnamed]['ca1_contact']['data'])
+        usable_contacts[participant] = contact_sublist
+    return usable_contacts
+
+
 def helper_chinfo(df_chinfo, contact_name):
     '''
     Extract appropriate channel info
@@ -129,7 +146,10 @@ data_dict = get_data(file_suffix=suff,data_path=data_path, \
     folder=folder,participants=participants,contacts=contacts, \
         triplet = True)
 
+# cross validate contact information between parsed.xlsx and available time series data
+usable_contacts = cross_validate_contacts(contacts, data_dict)
+
 # save in matlab format
 mdic = {"data": data_dict, "data_path": data_path, "data_file": suff, \
-    "contacts": contacts, "participants": participants}
+    "contacts": contacts, "usable_contacts": usable_contacts, "participants": participants}
 savemat("ca1_data_matrix.mat", mdic)
