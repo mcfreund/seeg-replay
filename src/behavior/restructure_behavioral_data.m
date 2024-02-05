@@ -53,15 +53,22 @@ function [] = restructure_behavioral_data()
 
      % initialize data table
      participant_id=[]; session=[]; trial_num=[]; trial_date_time = []; condition=[]; 
-     error_color=[]; error_position=[]; 
+     error_color=[]; error_color_w=[];error_color_angle_w=[]; % wrapped to -pi to pi, -180 to 180
+     error_position=[]; error_position_w=[];error_position_angle_w=[]; % wrapped to -pi to pi, -180 to 180
      rt_color=[]; rt_location=[]; 
-     chosen_color = []; chosen_position = []; 
+     chosen_color = []; chosen_color_w = [];chosen_color_angle_w = []; % wrapped to -pi to pi, -180 to 180
+     chosen_position = []; chosen_position_w = [];chosen_position_angle_w = []; % wrapped to -pi to pi, -180 to 180
+     true_position = [];
      true_RGB = []; chosen_RGB = [];
 
+     % Define data table
      data_table=table(participant_id, session, trial_num, trial_date_time, condition, ...
-     error_color, error_position, ...
+     error_color,error_color_w,error_color_angle_w,...
+     error_position,error_position_w,error_position_angle_w,...
      rt_color, rt_location, ...
-     chosen_color, chosen_position, ...
+     chosen_color, chosen_color_w,chosen_color_angle_w,...% wrapped to -pi to pi, -180 to 180
+     chosen_position, chosen_position_w,chosen_position_angle_w,...% wrapped to -pi to pi, -180 to 180
+     true_position,... % in 0-2pi space
      true_RGB, chosen_RGB);
      n_columns = width(data_table);
 
@@ -134,54 +141,66 @@ function [] = restructure_behavioral_data()
                     temp_row{5}=nan;
                end
      
+               
                if isfield(eval(trial_str).UserVars, 'error_color')
-                    temp_row{6}= rads_to_interval( eval(trial_str).UserVars.error_color );
+                    temp_row{6}= ( eval(trial_str).UserVars.error_color);
+                    temp_row{7}= wrapToPi(temp_row{6});
+                    temp_row{8}= wrapTo180(rad2deg(temp_row{6}));
                else
-                    temp_row{6}=nan;
+                    temp_row{6:8}=nan;
                end
      
                if isfield(eval(trial_str).UserVars, 'error_position')
-                    temp_row{7}= rads_to_interval( eval(trial_str).UserVars.error_position );
+                    temp_row{9}= ( eval(trial_str).UserVars.error_position );
+                    temp_row{10}= wrapToPi(temp_row{9});
+                    temp_row{11}= wrapTo180(rad2deg(temp_row{10}));
                else
-                    temp_row{7}=nan;
+                    temp_row{9:11}=nan;
                end
      
                if isfield(eval(trial_str).UserVars, 'rxn_time_color')
-                    temp_row{8}=eval(trial_str).UserVars.rxn_time_color;
-               else
-                    temp_row{8}=nan;
-               end
-     
-               if isfield(eval(trial_str).UserVars, 'rxn_time_position')
-                    temp_row{9}=eval(trial_str).UserVars.rxn_time_position;
-               else
-                    temp_row{9}=nan;
-               end
-
-               if isfield(eval(trial_str).UserVars, 'chosen_color')
-                    temp_row{10}=rads_to_interval(eval(trial_str).UserVars.chosen_color);
-               else
-                    temp_row{10}=nan;
-               end
-
-               if isfield(eval(trial_str).UserVars, 'chosen_position')
-                    temp_row{11}= rads_to_interval(eval(trial_str).UserVars.chosen_position);
-               else
-                    temp_row{11}=nan;
-               end
-
-               if isfield(eval(trial_str).UserVars, 'true_RGB')
-                    temp_row{12}=strjoin(string(eval(trial_str).UserVars.true_RGB),',');
+                    temp_row{12}=eval(trial_str).UserVars.rxn_time_color;
                else
                     temp_row{12}=nan;
                end
-
-               if isfield(eval(trial_str).UserVars, 'chosen_RGB')
-                    temp_row{13}=strjoin(string(eval(trial_str).UserVars.chosen_RGB),',');
+     
+               if isfield(eval(trial_str).UserVars, 'rxn_time_position')
+                    temp_row{13}=eval(trial_str).UserVars.rxn_time_position;
                else
                     temp_row{13}=nan;
                end
-     
+
+               if isfield(eval(trial_str).UserVars, 'chosen_color')
+                    temp_row{14}=(eval(trial_str).UserVars.chosen_color);
+                    temp_row{15}= wrapToPi(temp_row{14});
+                    temp_row{16}= wrapTo180(rad2deg(temp_row{14}));
+               else
+                    temp_row{14:16}=nan;
+               end
+
+               if isfield(eval(trial_str).UserVars, 'chosen_position')
+                    temp_row{17}= (eval(trial_str).UserVars.chosen_position);
+                    temp_row{18}= wrapToPi(temp_row{17});
+                    temp_row{19}= wrapTo180(rad2deg(temp_row{17}));
+                    % find(ismember(data_table.Properties.VariableNames,'error_position'))
+                    temp_row{20}= wrapTo2Pi(temp_row{17} + temp_row{9});% in 0 - 2pi space
+               else
+                    temp_row{17:20}=nan;
+               end
+               
+               if isfield(eval(trial_str).UserVars, 'true_RGB')
+                    temp_row{21}=strjoin(string(eval(trial_str).UserVars.true_RGB),',');
+               else
+                    temp_row{21}=nan;
+               end
+
+               if isfield(eval(trial_str).UserVars, 'chosen_RGB')
+                    temp_row{22}=strjoin(string(eval(trial_str).UserVars.chosen_RGB),',');
+               else
+                    temp_row{22}=nan;
+               end
+               
+           
                % add to data_table
                data_table=[data_table;temp_row];
      
@@ -192,9 +211,9 @@ function [] = restructure_behavioral_data()
 
      %% save to csv
      % in current folder
-     writetable(data_table, 'behavioral_data.csv')
+     %writetable(data_table, 'behavioral_data.csv')
      % in data dir
-     %writetable(data_table, strcat(SET_save_root,'behavioral_data.csv'))
+     writetable(data_table, strcat(SET_save_root,'behavioral_data.csv'))
 
 end
 
