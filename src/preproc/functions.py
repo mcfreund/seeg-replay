@@ -9,6 +9,9 @@ import pandas as pd
 
 from src.preproc.utils import save_raw_if, save_plt_if
 
+# This function does several things which should be disaggregated:
+# - read behavioral data and write an events.csv file
+# - write a session_info.csv file tracking the file structure
 
 def make_session_info(params):
     '''
@@ -222,10 +225,11 @@ def preproc_sessions(session_info, params):
         print("Processing subject " + row["participant_id"] + ", session " + row["session"] + "...")
         print("File " + str(i + 1) + " of " + str(len(session_info)))
 
-        fname_base = row["participant_id"] + "_" + row["session"]
+        # This gets extended based on what steps are done
+        fname = row["participant_id"] + "_" + row["session"] + '_raw'
 
         # Read raw file
-        raw = mne.io.read_raw_fif(os.path.join(row['path_sess'], fname_base + "_raw.fif"), preload = True)
+        raw = mne.io.read_raw_fif(os.path.join(row['path_sess'], fname + ".fif"), preload = True)
         
         # Read channel info file
         chinfo = pd.read_csv(os.path.join(row['path_subj'], row["participant_id"] + "_chinfo.csv"))
@@ -234,87 +238,98 @@ def preproc_sessions(session_info, params):
         # Remove line noise
         if params.do_rmline:
             raw = remove_line_noise(raw, nremove = 3)
-            save_raw_if(raw, params, row['path_sess'], 'raw_no60hz')
-            save_plt_if(raw, params, 'raw_no60hz')
+            fname += '_no60hz'
+            if params.save_step_rmline:
+                save_raw_if(raw, params, row['path_sess'], fname)
+                save_plt_if(raw, params, fname)
 
         # Re-referencing
         if params.do_rerefing:
             raw, chinfo = rereference(raw, chinfo, method = params.reref_method)
-            save_raw_if(raw, params, row['path_sess'], 'raw_no60hz_ref')
-            save_plt_if(raw, params, 'raw_no60hz_ref')
+            fname += '_ref'
+            if params.save_step_rerefing:
+                save_raw_if(raw, params, row['path_sess'], fname)
+                save_plt_if(raw, params, fname)
 
         # Bandpass filter data
         if params.do_bandpass:
             raw = raw.filter(params.bandpass[0], params.bandpass[1])
-            save_raw_if(raw, params, row['path_sess'], 'raw_no60hz_ref_bp')
-            save_plt_if(raw, params, 'raw_no60hz_ref_bp')
-
-        # Downsample the data
-        if params.do_downsamp:
-            raw = raw.resample(params.sample_freq_new)
-            save_raw_if(raw, params, row['path_sess'], 'raw_no60hz_ref_bp_ds')
-            save_plt_if(raw, params, 'raw_no60hz_ref_bp_ds')
+            fname += '_bp'
+            if params.save_step_bandpass:
+                save_raw_if(raw, params, row['path_sess'], fname)
+                save_plt_if(raw, params, fname)
 
         ## Annotate bad time samples
         if params.do_rmouts:
             bad = annot_bad_times(raw, thresh = 20, consensus = 1, method = "mad", duration = 6/1024)
             raw.set_annotations(raw.annotations + bad)
+            fname += '_rmouts'
+            
+            # Always want a copy of final, full-sample raw
+            save_raw_if(raw, params, row['path_sess'], fname)
+
+        # Downsample the data
+        if params.do_downsample_session:
+            raw = raw.resample(params.sample_freq_new)
+            fname += '_ds'
+
+            # Last step if applied, so no save flag
+            save_raw_if(raw, params, row['path_sess'], fname)
+            save_plt_if(raw, params, fname)
 
         # Update and save channel info
         chinfo.to_csv(os.path.join(row['path_subj'], row["participant_id"] + "_chinfo.csv"), index = False)
 
-        # Save final raws
-        save_raw_if(raw, params, row['path_sess'], 'raw_final', is_final = True)
-        save_plt_if(raw, params, 'raw_final', is_final = True)
-
 
 def clip_sessions(session_info, params):
     ''' Like epoching, but without the equal-size restriction.'''
+    from src.preproc.utils import get_times_from_notes, clip_iterator
 
-    # Load behavioral data
-    beh_data = pd.read_csv(os.path.join(params.path_save, "behavioral_data.csv"))
-
-    log = []
+    # 
     for i, row in session_info.iterrows():
 
         # Say what subject & file we're on
         print("Processing subject " + row["participant_id"] + ", session " + row["session"] + "...")
         print("File " + str(i + 1) + " of " + str(len(session_info)))
         
-        # Read raw file 
+        # Read raw file - preferably one that isn't downsampled
         fname = row["participant_id"] + "_" + row["session"]
-        raw = mne.io.read_raw_fif(os.path.join(row['path_sess'], fname + "_raw_final.fif"), preload = True)
+        raw = mne.io.read_raw_fif(os.path.join(row['path_sess'], fname + "_raw_no60hz_bp_rmouts.fif"), preload = True)
         
-        # Read channel info file
-        chinfo = pd.read_csv(os.path.join(row['path_subj'], row["participant_id"] + "_chinfo.csv"))
-        
-        # Get events from annotations
-        events, event_id = mne.events_from_annotations(raw, event_id = params.trigger_from_desc_dict)
-        
-        # For each epoch, select data and save as a file
-        for epoch_type in params.epoch_info.keys():
-            
-            # First and last annotations (where returns tuple, need 0th element, then get first or last match)
-            event_first = raw.annotations[np.where(raw.annotations.description == 'trial_start')[0][0 ]]['onset']
-            event_last  = raw.annotations[np.where(raw.annotations.description == 'trial_stop' )[0][-1]]['onset']
+        # Get trial starts and ends
+        trial_times = get_times_from_notes(raw, 'trial_start', 'trial_stop')
 
-            # Clip out data prior to first event
-            if params.do_clip_pre:
-                new = raw.copy()
-                new.crop(0, event_first)
-                save_raw_if(new, params, row['path_sess'], fname + "_pre", is_final = True)
-            
-            # Clip out "body" of data
-            if params.do_clip_dur:
-                new = raw.copy()
-                new.crop(event_first-1, event_last+1)
-                save_raw_if(new, params, row['path_sess'], fname + "_dur", is_final = True)
+        # Clip out data prior to first event
+        if params.do_clip_pre:
+            new = raw.copy()
+            new.crop(0, trial_times[0,0])
+            save_raw_if(new, params, row['path_sess'], fname + "_pre")
+        
+        # Clip out "body" of data
+        if params.do_clip_dur:
+            new = raw.copy()
+            new.crop(trial_times[0,0]-1, trial_times[-1,-1]+1)
+            save_raw_if(new, params, row['path_sess'], fname + "_dur")
 
-            # Clip out data after last event
-            if params.do_clip_post:
-                new = raw.copy()
-                new.crop(event_last, raw.times[-1])
-                save_raw_if(new, params, row['path_sess'], fname + "_post", is_final = True)
+        # Clip out data after last event
+        if params.do_clip_post:
+            new = raw.copy()
+            new.crop(trial_times[-1,-1], raw.times[-1])
+            save_raw_if(new, params, row['path_sess'], fname + "_post")
+
+
+        # Clip out trials
+        clip_iterator(raw, params, str_beg = 'trial_start', str_end = 'trial_stop', path = row['path_sess'], fname = fname, sfx = 'trial')
+
+        # Clip out first movie presentations
+        clip_iterator(raw, params, str_beg = 'clip_start', str_end = 'clip_stop', path = row['path_sess'], fname = fname, sfx = 'clip')
+
+        # Broken...
+        # clip_iterator(raw, params, str_beg = 'clipcue_start', str_end = 'clipcue_stop', path = row['path_sess'], fname = fname, sfx = 'clip')
+
+        # Clip out first movie presentations
+        clip_iterator(raw, params, str_beg = 'loc_start', str_end = 'loc_resp', path = row['path_sess'], fname = fname, sfx = 'loc')
+
 
 
 def epoch_sessions(session_info, params):
@@ -343,9 +358,6 @@ def epoch_sessions(session_info, params):
         # Read raw file 
         fname_base = row["participant_id"] + "_" + row["session"]
         raw = mne.io.read_raw_fif(os.path.join(row['path_sess'], fname_base + "_raw_final.fif"), preload = True)
-        
-        # Read channel info file
-        chinfo = pd.read_csv(os.path.join(row['path_subj'], row["participant_id"] + "_chinfo.csv"))
         
         # Get events from annotations
         events, event_id = mne.events_from_annotations(raw, event_id = params.trigger_from_desc_dict)

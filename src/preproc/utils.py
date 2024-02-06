@@ -188,46 +188,40 @@ def construct_raw(session_row, params):
 
 
 # Save selector for raws
-def save_raw_if(raw, params, path_sess, fname, is_final = False):
+def save_raw_if(raw, params, path_sess, fname):
     ''' Function for saving file types selected in params.'''
-    
-    # A little kludgy but...
-    if params.save_steps or is_final:
 
-        # Filename without a filetype suffix
-        fname = os.path.join(path_sess, fname)
+    # Filename without a filetype suffix
+    fname = os.path.join(path_sess, fname)
 
-        # Save .fif format
-        if params.save_fif:
-            raw.save(fname + '.fif', overwrite = True)
+    # Save .fif format
+    if params.save_fif:
+        raw.save(fname + '.fif', overwrite = True)
 
-        # Save .set format
-        if params.save_set:
-            mne.export.export_raw(fname + '.set', raw, overwrite = True)
+    # Save .set format
+    if params.save_set:
+        mne.export.export_raw(fname + '.set', raw, overwrite = True)
 
-        # Save .csv format
-        if params.save_csv:
-            df = raw.to_data_frame()
-            df.to_csv(fname + '.csv', index=False)
+    # Save .csv format
+    if params.save_csv:
+        df = raw.to_data_frame()
+        df.to_csv(fname + '.csv', index=False)
 
-        # Save .h5 format
-        if params.save_h5:
-            df = raw.to_data_frame()
-            df.to_hdf(fname + 'h5')
+    # Save .h5 format
+    if params.save_h5:
+        df = raw.to_data_frame()
+        df.to_hdf(fname + 'h5')
 
 
 # Plot functions
-def save_plt_if(raw, params, fname, is_final = False):
+def save_plt_if(raw, params, fname):
     ''' Function for saving plots, if selected in params.'''
 
-    # A little kludgy but...
-    if params.save_steps or is_final:
-
-        if params.save_plt:
-            fig = raw.compute_psd().plot(show = False)
-            fig.axes[0].set_title("raw timeseries: " + fname + "\n" + t)
-            fn_psd = os.path.join(params.path_figs, fname ,'.png')
-            fig.savefig(fn_psd)
+    if params.save_plt:
+        fig = raw.compute_psd().plot(show = False)
+        fig.axes[0].set_title("raw timeseries: " + fname + "\n" + t)
+        fn_psd = os.path.join(params.path_figs, fname ,'.png')
+        fig.savefig(fn_psd)
 
 
 
@@ -459,3 +453,30 @@ def annot_bad_times(raw, description = "BAD_outlier", thresh = 20, duration = 1,
 
     return bad_annots
 
+
+def get_times_from_notes(raw, str_beg, str_end):
+    # 
+    times = raw.annotations[np.where(raw.annotations.description == str_beg)[0]].onset
+    times = np.stack([times, raw.annotations[np.where(raw.annotations.description == str_end)[0]].onset], axis = 1)
+
+    # Make sure start times are always before end times
+    assert(all(times[:,0] <  times[:,1]))
+
+    return times
+
+def clip_iterator(raw, params, str_beg, str_end, path, fname, sfx):
+
+    # Get array with rows of (start, stop)
+    times = get_times_from_notes(raw, str_beg, str_end)
+
+    # Clip out trials
+    if params.do_clip_trials:
+        for i in range(len(times[:,0])):
+            new = raw.copy()
+            new.crop(times[i,0], times[i,1])
+            save_raw_if(new, params, path, fname + '_' + sfx + '_' + f'{i:02}')
+
+            # Save downsampled versions
+            if params.do_downsample_trials:
+                new = new.resample(params.sample_freq_new)
+                save_raw_if(new, params, path, fname + '_ds_' + sfx + '_' + f'{i:02}')

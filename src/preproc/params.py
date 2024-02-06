@@ -5,22 +5,28 @@ class ParamsPreProc:
         # What should the pre-processing script do?
         s.do_events   = False     # Write events files?
         s.do_sessinfo = False     # Write session info?
+
         s.do_bandpass = True      # Bandpass filtering
         s.do_epoching = False     # Epoching
         s.do_rerefing = False     # Re-referencing
         s.do_rmline   = True      # Line-noise removal
         s.do_rmouts   = True      # Outlier removal via MAD threshold
         s.do_interact = False     # Interactive MNE outlier removal
-        s.do_downsamp = True     # Interactive MNE outlier removal
+
+        # Downsample in various places
+        #s.do_downsample_epochs  = True # Doesn't exist yet
+        s.do_downsample_session = True
+        s.do_downsample_trials  = True
         
         # Removes non-experiment time from beg, end of main raw file.
         s.do_trim_pre  = False
         s.do_trim_post = False
 
         # Clip sections into files (conflicts w/ trim)
-        s.do_clip_pre  = True
-        s.do_clip_dur  = True
-        s.do_clip_post = True
+        s.do_clip_pre    = True
+        s.do_clip_dur    = True
+        s.do_clip_post   = True
+        s.do_clip_trials = True
 
         # Which formats should data be exported in
         s.save_fif = True
@@ -29,8 +35,15 @@ class ParamsPreProc:
         s.save_csv = False
         s.save_plt = False
 
+        # Continuous behavioral data
+
+
         # Save files for intermediate preprocessing steps?
-        s.save_steps = False
+        s.save_step_rerefing   = False
+        s.save_step_epoching   = False
+        s.save_step_bandpass   = False
+        s.save_step_rmline     = False
+        s.save_step_rmout      = False
 
         # Should we use sub-directories or save to one folder?
         s.use_subdirs = True
