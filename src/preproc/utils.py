@@ -464,10 +464,11 @@ def get_times_from_notes(raw, str_beg, str_end):
 
     return times
 
-def clip_iterator(raw, params, str_beg, str_end, path, fname, sfx):
+def clip_iterator(raw, params, str_beg, str_end, path, fname, sfx, times = None):
 
-    # Get array with rows of (start, stop)
-    times = get_times_from_notes(raw, str_beg, str_end)
+    # Accept timing arrays with rows of (start,stop) or generate them
+    if times == None:
+        times = get_times_from_notes(raw, str_beg, str_end)
 
     # Clip out trials
     if params.do_clip_trials:
