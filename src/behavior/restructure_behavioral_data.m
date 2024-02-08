@@ -52,17 +52,30 @@ function [] = restructure_behavioral_data()
      sessions = {'Encoding', 'SameDayRecall', 'NextDayRecall'};
 
      % initialize data table
-     participant_id=[]; session=[]; trial_num=[]; trial_date_time = []; condition=[]; 
-     error_color=[]; error_position=[]; 
-     rt_color=[]; rt_location=[]; 
-     chosen_color = []; chosen_position = []; 
-     true_RGB = []; chosen_RGB = [];
+     participant_id = [];
+     session = [];
+     trial_num = [];
+     trial_date_time = [];
+     condition = [];
+     error_colorpos = [];
+     error_position = [];
+     rt_color = [];
+     rt_location = [];
+     chosen_colorpos = [];
+     chosen_position = [];
+     true_position = [];
+     true_colorpos = [];
+     true_RGB = [];
+     true_hue = [];
+     chosen_RGB = [];
+     chosen_hue = [];
+     error_hue = [];
 
-     data_table=table(participant_id, session, trial_num, trial_date_time, condition, ...
-     error_color, error_position, ...
-     rt_color, rt_location, ...
-     chosen_color, chosen_position, ...
-     true_RGB, chosen_RGB);
+     % Define data table
+     data_table=table(...
+          participant_id, session, trial_num, trial_date_time, condition, error_colorpos, error_position, ...
+          rt_color, rt_location, chosen_colorpos, chosen_position, true_position, ...
+          true_colorpos, true_RGB, true_hue, chosen_RGB, chosen_hue, error_hue);
      n_columns = width(data_table);
 
      % loop through participants
@@ -134,14 +147,17 @@ function [] = restructure_behavioral_data()
                     temp_row{5}=nan;
                end
      
+               
                if isfield(eval(trial_str).UserVars, 'error_color')
-                    temp_row{6}= rads_to_interval( eval(trial_str).UserVars.error_color );
+                    error_colorpos = eval(trial_str).UserVars.error_color;
+                    temp_row{6}= wrapTo180(rad2deg(error_colorpos));
                else
                     temp_row{6}=nan;
                end
      
                if isfield(eval(trial_str).UserVars, 'error_position')
-                    temp_row{7}= rads_to_interval( eval(trial_str).UserVars.error_position );
+                    error_position = eval(trial_str).UserVars.error_position;
+                    temp_row{7} = wrapTo180(rad2deg(error_position));
                else
                     temp_row{7}=nan;
                end
@@ -159,29 +175,59 @@ function [] = restructure_behavioral_data()
                end
 
                if isfield(eval(trial_str).UserVars, 'chosen_color')
-                    temp_row{10}=rads_to_interval(eval(trial_str).UserVars.chosen_color);
+                    chosen_colorpos = (eval(trial_str).UserVars.chosen_color);
+                    temp_row{10} = wrapTo180(rad2deg(chosen_colorpos));
                else
                     temp_row{10}=nan;
                end
 
                if isfield(eval(trial_str).UserVars, 'chosen_position')
-                    temp_row{11}= rads_to_interval(eval(trial_str).UserVars.chosen_position);
+                    chosen_position = (eval(trial_str).UserVars.chosen_position);
+                    temp_row{11} = wrapTo180(rad2deg(chosen_position));
                else
                     temp_row{11}=nan;
                end
 
-               if isfield(eval(trial_str).UserVars, 'true_RGB')
-                    temp_row{12}=strjoin(string(eval(trial_str).UserVars.true_RGB),',');
+               if isfield(eval(trial_str).UserVars, 'chosen_position') * isfield(eval(trial_str).UserVars, 'error_position')
+                    temp_row{12} = wrapTo180(rad2deg(error_position + chosen_position));  % true_position
                else
                     temp_row{12}=nan;
                end
 
-               if isfield(eval(trial_str).UserVars, 'chosen_RGB')
-                    temp_row{13}=strjoin(string(eval(trial_str).UserVars.chosen_RGB),',');
+               if isfield(eval(trial_str).UserVars, 'chosen_color') * isfield(eval(trial_str).UserVars, 'error_color')
+                    temp_row{13} = wrapTo180(rad2deg(error_colorpos + chosen_colorpos));  % true_colorpos
                else
                     temp_row{13}=nan;
                end
-     
+
+               % true_RGB, true_hue
+               if isfield(eval(trial_str).UserVars, 'true_RGB')
+                    true_RGB = eval(trial_str).UserVars.true_RGB;
+                    temp_row{14} = strjoin(string(true_RGB),',');
+                    true_hue = rgb_to_lab_hue(true_RGB);
+                    temp_row{15} = true_hue;  % true_hue
+               else
+                    temp_row{14:15}=nan;
+               end
+
+               % chosen_RGB, chosen_hue
+               if isfield(eval(trial_str).UserVars, 'chosen_RGB')
+                    chosen_RGB = eval(trial_str).UserVars.chosen_RGB;
+                    temp_row{16} = strjoin(string(chosen_RGB),',');
+                    chosen_hue = rgb_to_lab_hue(chosen_RGB);
+                    temp_row{17} = chosen_hue;  % chosen_hue
+               else
+                    temp_row{16:17}=nan;
+               end
+
+               % error_hue
+               if isfield(eval(trial_str).UserVars, 'chosen_RGB') * isfield(eval(trial_str).UserVars, 'true_RGB')
+                    temp_row{18} = wrapTo180(true_hue - chosen_hue);
+               else
+                    temp_row{18}=nan;
+               end
+
+           
                % add to data_table
                data_table=[data_table;temp_row];
      
@@ -192,20 +238,22 @@ function [] = restructure_behavioral_data()
 
      %% save to csv
      % in current folder
-     writetable(data_table, 'behavioral_data.csv')
+     %writetable(data_table, 'behavioral_data.csv')
      % in data dir
-     %writetable(data_table, strcat(SET_save_root,'behavioral_data.csv'))
+     filename_out = strcat(SET_save_root,'behavioral_data.csv');
+     writetable(data_table, filename_out);
+     fileattrib(filename_out, '+w', 'a');  % give write permissions
 
 end
 
-function [var] = rads_to_interval(var)
-     % Convert from [-2 pi, 2 pi] radians to [-1,1]
-     var = var /(2*pi);
-     
-     % Convert from [-1, 1] to [-0.5, 0.5]
-     if var > 0.5
-          var =  1 - var;
-     elseif var < -0.5
-          var = -1 - var;
-     end
+
+function [hue_angle] = rgb_to_lab_hue(rgb_matrix)
+    % Convert from sRGB to CIELAB color space
+    rgb_matrix = double(rgb_matrix) / 255;
+    lab = rgb2lab(rgb_matrix);
+    
+    % Calculate the hue angle in radians, convert to degree.
+    % NB: hue_angle is already wrapped to [-180, 180]
+    % atan2 is used for a better quadrant determination
+    hue_angle = rad2deg(atan2(lab(:, 3), lab(:, 2)));
 end
