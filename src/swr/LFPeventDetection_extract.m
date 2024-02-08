@@ -7,6 +7,7 @@ clear all;
 %% directory things for toolbox
 SET_github_root = '/oscar/home/jhewson/brainstorm/seeg-replay/src/swr';
 SET_data_root = '/oscar/home/jhewson/brainstorm/seeg-replay/src/swr';
+SET_save_root = '/oscar/data/brainstorm-ws/megagroup_data';
 
 restoredefaultpath;
 addpath(genpath(cat(2,SET_github_root,'/vandermeerlab/code-matlab/shared'))); % clone vandermeerlab repo at https://github.com/vandermeerlab/vandermeerlab
@@ -41,7 +42,6 @@ lgp_evt = TSDtoIV(cfg,lgp_z);
 data.e0010GP.CMHIP2.ca1_contact.tstart = lgp_evt.tstart;
 data.e0010GP.CMHIP2.ca1_contact.tend = lgp_evt.tend;
 
-%%
 %% extract swr events from all CA1 channels
 part_names = fieldnames(data);
 participant_names = fieldnames(usable_contacts);
@@ -75,28 +75,10 @@ for i = 1:length(participant_names)
     end
 end
 
+%% Save data
 
+restoredefaultpath;
 
-%%
-
-function extract_swr_events(data,part,contact)
-    disp('EXTRACTING')
-    disp(part)
-    disp(contact)
-    %part = data{i};
-    %contact = part{j};
-    lfp = data.(part).(contact).ca1_contact;
-    lfp.cfg.history.mfun = {};   % filler
-    lfp.cfg.history.cfg = {};    % filler
-    lp = LFPpower([],lfp);
-    lgp_z = zscore_tsd(lp);
-    cfg = [];
-    cfg.method = 'raw';
-    cfg.threshold = 3;
-    cfg.dcn =  '>'; % return intervals where threshold is exceeded
-    cfg.merge_thr = 0.05; % merge events closer than this
-    cfg.minlen = 0.05; % minimum interval length
-    lgp_evt = TSDtoIV(cfg,lgp_z);
-    data.participant.contact.ca1_contact.tstart = lgp_evt.tstart;
-    data.participant.contact.ca1_contact.tend = lgp_evt.tend;
-end
+addpath(genpath(SET_save_root)); % clone vandermeerlab repo at https://github.com/vandermeerlab/vandermeerlab
+cd(SET_save_root)
+save('event_ca1_data.mat','data')
