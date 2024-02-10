@@ -165,7 +165,7 @@ def make_raws(session_info, params):
         raw.save(os.path.join(row['path_sess'], fname_base + "_raw.fif"), overwrite = True)
         
         # Save channel info
-        chinfo.to_csv(os.path.join(row['path_subj'], "channel_info.csv"), index = False)
+        chinfo.to_csv(os.path.join(row['path_sess'], "channel_info.csv"), index = False)
         
         return raw, chinfo
 
@@ -196,7 +196,7 @@ def inspect_sessions(session_info, params):
         raw = mne.io.read_raw_fif(fname_fif, preload = True)
 
         # Read channel info
-        chinfo = pd.read_csv(os.path.join(row['path_subj'], row["participant_id"] + "_chinfo.csv"))
+        chinfo = pd.read_csv(os.path.join(row['path_sess'], "channel_info.csv"))
 
         ## Manually mark bad channels and update each subject's chinfo
         raw.compute_psd().plot()
@@ -205,7 +205,7 @@ def inspect_sessions(session_info, params):
         chinfo["is_bad_sess_" + row["session"]] = is_bad
 
         ## Save channel info
-        chinfo.to_csv(os.path.join(row['path_subj'], row["participant_id"] + "_chinfo.csv"), index = False)
+        chinfo.to_csv(os.path.join(row['path_sess'], "channel_info.csv"), index = False)
         
         # Overwrite the raw file
         raw.save(os.path.join(row['path_sess'], fname_base + "_raw.fif"), overwrite = True)
@@ -232,7 +232,7 @@ def preproc_sessions(session_info, params):
         raw = mne.io.read_raw_fif(os.path.join(row['path_sess'], fname + ".fif"), preload = True)
         
         # Read channel info file
-        chinfo = pd.read_csv(os.path.join(row['path_subj'], row["participant_id"] + "_chinfo.csv"))
+        chinfo = pd.read_csv(os.path.join(row['path_sess'], "channel_info.csv"))
 
 
         # Remove line noise
@@ -278,7 +278,7 @@ def preproc_sessions(session_info, params):
             save_plt_if(raw, params, fname)
 
         # Update and save channel info
-        chinfo.to_csv(os.path.join(row['path_subj'], row["participant_id"] + "_chinfo.csv"), index = False)
+        chinfo.to_csv(os.path.join(row['path_sess'], "channel_info.csv"), index = False)
 
 
 def clip_sessions(session_info, params):
