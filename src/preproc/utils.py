@@ -412,8 +412,13 @@ def rereference(raw, chinfo, method = 'laplacian', drop_bads = True, selfref_fir
         method = method,
         selfref_first = selfref_first)
 
-    ## mark chinfo with those that were rereferenced
-    chinfo["was_rereferenced"] = chinfo["contact"].isin(ch_names_ref)
+    if method == "laplacian":
+        ## mark chinfo with those that were rereferenced
+        chinfo["survived"] = chinfo["contact"].isin(ch_names_ref)
+        ## Save csv file of those that survived. As with the csv written by inspect_raws(), this is primarily for 
+        ## record keeping and is not expected to be used by downstream analyses.
+        fname_out = os.path.join(row['path_sess'], "survived_laplacian_" + time.strftime("%Y%m%d-%H%M%S") + ".csv")
+        chinfo[["index", "contact", "survived"]].to_csv(fname_out, index = False)
 
     ## add data back to raw
     dropped_chs = [ch for ch in raw_copy.ch_names if ch not in ch_names_ref]  ## drop
