@@ -165,7 +165,7 @@ def make_raws(session_info, params):
         raw.save(os.path.join(row['path_sess'], fname_base + "_raw.fif"), overwrite = True)
         
         # Save channel info
-        chinfo.to_csv(os.path.join(row['path_subj'], "channel_info.csv"), index = False)
+        chinfo.to_csv(os.path.join(row['path_subj'], row["participant_id"] + "_chinfo.csv"), index = False)
         
         return raw, chinfo
 
@@ -184,6 +184,8 @@ def inspect_sessions(session_info, params):
     #   on OOD. Displaying larger files in the popup window can be slow -- potentially plotting onnly a subset
     #   of timepoints or channels can speed this up.
 
+    import time
+
     for i, row in session_info.iterrows():
         print("Marking bads for subject " + row["participant_id"] + ", session " + row["session"] + "...")
         print("File " + str(i + 1) + " of " + str(len(session_info)))
@@ -198,16 +200,26 @@ def inspect_sessions(session_info, params):
         # Read channel info
         chinfo = pd.read_csv(os.path.join(row['path_subj'], row["participant_id"] + "_chinfo.csv"))
 
-        ## Manually mark bad channels and update each subject's chinfo
-        raw.compute_psd().plot()
-        raw.plot(block = True)  ## halts loop until plot is closed; use to mark bads.
-        is_bad = [ch in raw.info["bads"] for ch in chinfo["contact"]]
-        chinfo["is_bad_sess_" + row["session"]] = is_bad
-
-        ## Save channel info
-        chinfo.to_csv(os.path.join(row['path_subj'], row["participant_id"] + "_chinfo.csv"), index = False)
+        if params.do_apply_bads:
+            print("Applying saved bads and skipping ploting...")
+            # Default is no bads, otherwise apply bads if specified
+            raw.info["bads"] = params.bads.get(row["participant_id"] + "_" + row["session"], [])
+        else:
+            ## Manually mark bad channels and update each subject's chinfo
+            raw.compute_psd().plot()
+            raw.plot(block = True)  ## halts loop until plot is closed; use to mark bads.
+            
+        ## Save bad channel info
+        ## Unlike _chinfo.csvs, this csv is written to session subdirectories, as bad channels may differ across sessions.
+        ## File also appended with date and time to avoid overwriting and losing prior bad channel markings.
+        ## Even so, this file is mainly for record-keeping and is not anticipated to be used substantively by downstream analyses
+        ## (as the bad channels are already marked in the raw file).
+        chinfo["is_bad"] = [ch in raw.info["bads"] for ch in chinfo["contact"]]
+        fname_out = os.path.join(row['path_sess'], "badchs_" + time.strftime("%Y%m%d-%H%M%S") + ".csv")
+        chinfo[["index", "contact", "is_bad"]].to_csv(fname_out, index = False)
         
-        # Overwrite the raw file
+        # Overwrite the raw file.
+        # NB: There is no data-loss here, so if another definition of bad channels is desired, this can be modified within the raw.
         raw.save(os.path.join(row['path_sess'], fname_base + "_raw.fif"), overwrite = True)
 
 
@@ -237,7 +249,9 @@ def preproc_sessions(session_info, params):
 
         # Remove line noise
         if params.do_rmline:
-            raw = remove_line_noise(raw, nremove = 3)
+            # Default is 3, but use specified value if it exists:
+            nremove = params.n_components_60hz.get(row["participant_id"] + "_" + row["session"], 3)
+            raw = remove_line_noise(raw, nremove = nremove)
             fname += '_no60hz'
             if params.save_step_rmline:
                 save_raw_if(raw, params, row['path_sess'], fname)
@@ -276,9 +290,6 @@ def preproc_sessions(session_info, params):
             # Last step if applied, so no save flag
             save_raw_if(raw, params, row['path_sess'], fname)
             save_plt_if(raw, params, fname)
-
-        # Update and save channel info
-        chinfo.to_csv(os.path.join(row['path_subj'], row["participant_id"] + "_chinfo.csv"), index = False)
 
 
 def clip_sessions(session_info, params):
