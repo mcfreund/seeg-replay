@@ -238,10 +238,10 @@ def preproc_sessions(session_info, params):
         print("File " + str(i + 1) + " of " + str(len(session_info)))
 
         # This gets extended based on what steps are done
-        fname = row["participant_id"] + "_" + row["session"] + '_raw'
+        fname = row["participant_id"] + "_" + row["session"]
 
         # Read raw file
-        raw = mne.io.read_raw_fif(os.path.join(row['path_sess'], fname + ".fif"), preload = True)
+        raw = mne.io.read_raw_fif(os.path.join(row['path_sess'], fname + "_raw.fif"), preload = True)
         
         # Read channel info file
         chinfo = pd.read_csv(os.path.join(row['path_subj'], row["participant_id"] + "_chinfo.csv"))
@@ -284,11 +284,17 @@ def preproc_sessions(session_info, params):
 
         # Downsample the data
         if params.do_downsample_session:
-            raw = raw.resample(params.sample_freq_new)
+            # Extract event triggers to jointly resample them to same time-grid as raw data.
+            # see: https://mne.tools/stable/generated/mne.io.Raw.html#mne.io.Raw.resample
+            # Use regexp = None so that '^BAD' annots are preserved.
+            events, event_desc = mne.events_from_annotations(raw, event_id = params.trigger_from_desc_dict, regexp = None)
+            raw, events = raw.resample(params.sample_freq_new, events = events)
+            ## Add events back to raw as annotations
+            annots = mne.annotations_from_events(events, raw.info['sfreq'], params.trigger_to_desc_dict)
+            raw.set_annotations(annots)
             fname += '_ds'
-
             # Last step if applied, so no save flag
-            save_raw_if(raw, params, row['path_sess'], fname)
+            save_raw_if(raw, params, row['path_sess'], fname + "_raw")
             save_plt_if(raw, params, fname)
 
 
@@ -305,7 +311,8 @@ def clip_sessions(session_info, params):
         
         # Read raw file - preferably one that isn't downsampled
         fname = row["participant_id"] + "_" + row["session"]
-        raw = mne.io.read_raw_fif(os.path.join(row['path_sess'], fname + "_raw_no60hz_bp_rmouts.fif"), preload = True)
+        raw = mne.io.read_raw_fif(
+            os.path.join(row['path_sess'], fname + params.suffix_preproc + "_raw.fif"), preload = True)
         
         # Get trial starts and ends
         trial_times = get_times_from_notes(raw, 'trial_start', 'trial_stop')
@@ -351,7 +358,11 @@ def epoch_sessions(session_info, params):
           with the seeg data using the trial_num column in the metadata file.
     - NB: There may be fewer trials in epochs than in behavioral data, if some trials were annotated as bad.
     '''
-
+    
+    # Check for bad configurations of preproc parameters
+    if "_ds" in params.suffix_preproc and params.do_downsample_epochs:
+        raise ValueError("Don't generate downsampled epochs from already-downsampled raws.")
+    
     # Load behavioral data
     beh_data = pd.read_csv(os.path.join(params.path_save, "behavioral_data.csv"))
 
@@ -363,12 +374,13 @@ def epoch_sessions(session_info, params):
         print("File " + str(i + 1) + " of " + str(len(session_info)))
 
         # Create an epoch files directory
-        dir_subj_epochs = os.path.join(row['path_save'], "epochs", row["participant_id"], row["session"])
-        os.makedirs(dir_subj_epochs, exist_ok = True)
+        #dir_subj_epochs = os.path.join(params.path_save, "epochs", row["participant_id"], row["session"])
+        #os.makedirs(dir_subj_epochs, exist_ok = True)
         
         # Read raw file 
-        fname_base = row["participant_id"] + "_" + row["session"]
-        raw = mne.io.read_raw_fif(os.path.join(row['path_sess'], fname_base + "_raw_final.fif"), preload = True)
+        fname_base = os.path.join(
+            row['path_sess'], row["participant_id"] + "_" + row["session"] + params.suffix_preproc)
+        raw = mne.io.read_raw_fif(fname_base + "_raw.fif", preload = True)
         
         # Get events from annotations
         events, event_id = mne.events_from_annotations(raw, event_id = params.trigger_from_desc_dict)
@@ -402,22 +414,40 @@ def epoch_sessions(session_info, params):
             metadata["trial_num"] = beh_data_sub["trial_num"].values  ## NB: ASSUMES BOTH BEH AND EPOCHS ARE CHRONOLOG.
             
             ## epoch and save
-            epochs = mne.Epochs(
-                raw,
-                baseline = None,
-                detrend = None,
-                events = events_out,
-                event_id = event_id_out,
-                tmin = params.epoch_info[epoch_type]["tmin"],
-                tmax = params.epoch_info[epoch_type]["tmax"],
-                preload = True,
-                metadata = metadata,
-                reject_by_annotation = False  ## this rejects epochs that were annotated as "BAD_outlier" w/in clean_raws.py
-                )
+            epochs_list = []
+            # Anti-aliasing filter and decimation factor
+            if params.do_downsample_epochs:
+                # https://mne.tools/stable/auto_tutorials/preprocessing/30_filtering_resampling.html#best-practices
+                raw.filter(0, params.sample_freq_new / 3)
+                decim = int(params.sample_freq_native / params.sample_freq_new)
+            else:
+                decim = 1  ## no downsampling
+                
+            for reject_bad_epos in [True, False]:                
+                epochs = mne.Epochs(
+                    raw,
+                    baseline = None,
+                    detrend = None,
+                    events = events_out,
+                    event_id = event_id_out,
+                    tmin = params.epoch_info[epoch_type]["tmin"],
+                    tmax = params.epoch_info[epoch_type]["tmax"],
+                    preload = True,
+                    metadata = metadata,
+                    decim = decim,
+                    ## if true, this rejects epochs that were annotated as "BAD_outlier" w/in raw file:
+                    reject_by_annotation = reject_bad_epos
+                    )
+                epochs_list.append(epochs)
+            epochs = epochs_list[1]  ## preserve all epochs
+            is_bad = [x != () for x in epochs_list[0].drop_log] ## but save markers of those dropped, and add this to metadata.
+            metadata["has_extreme_val"] = is_bad  ## this keeps flexibility for downstream analyses
+            ## NB: currently in mne, epoching twice like this seems to be simplest way to preserve all epochs while still ID'ing
+            ## those marked bad.
             
             # Save epoch files
-            fname_epochs = fname_base + + "_no60hz_ref_bp_" + epoch_type + "-epo"
-            save_raw_if(epochs, params, dir_subj_epochs, fname_epochs)
+            fname_epochs = fname_base + "_" + epoch_type + "-epo"
+            save_raw_if(epochs, params, row['path_sess'], fname_epochs)
 
             ## save metadata
             metadata.to_csv(fname_epochs + "-metadata.csv")

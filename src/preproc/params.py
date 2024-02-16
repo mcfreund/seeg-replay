@@ -36,7 +36,7 @@ class ParamsPreProc:
         )
 
         # Downsample in various places
-        #s.do_downsample_epochs  = True # Doesn't exist yet
+        s.do_downsample_epochs  = True # Doesn't exist yet
         s.do_downsample_session = True
         s.do_downsample_trials  = True
         
@@ -135,6 +135,11 @@ class ParamsPreProc:
                 row_events = "clip_start"  ## which event/trigger to use to define the start of a new row/epoch?
             )
         )
-        
+                
         # Bandpass (low, high frequencies)
         s.bandpass = (0.5, 200)
+        
+        # Filename suffix: for reading pre-processed raws, and writing derivatives of them (e.g., epochs)
+        # NB: does not include the trailing suffix and .fif extension that mne expects (e.g., '-epo.fif', 'raw.fif')
+        s.suffix_preproc = "_no60hz_bp_rmouts"
+        
