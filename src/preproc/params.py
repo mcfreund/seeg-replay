@@ -118,5 +118,5 @@ class ParamsPreProc:
         
         # Filename suffix: for reading pre-processed raws, and writing derivatives of them (e.g., epochs)
         # NB: does not include the trailing suffix and .fif extension that mne expects (e.g., '-epo.fif', 'raw.fif')
-        s.suffix_preproc = "_no60hz_bp_markouts"
+        s.suffix_preproc = "_no60hz_bp_rmouts"
         
