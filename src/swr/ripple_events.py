@@ -38,6 +38,8 @@ for participant in participants:
         tend = data[contact_misnamed][0][0]['ca1_contact'][0][0]['tend'][0][0]
         ca1_events[participant][contact] = np.stack([tstart,tend],axis=1)[:,:,0]
 
+
+
 # print(ca1_events[participants[0]][usable_contacts[participants[0]][0]])
 # print(usable_contacts[participants[0]])
 
@@ -153,8 +155,8 @@ for participant in participants:
     participant_events = {}
     for session in sessions:
         array, dic = get_raw_data(file_suffix=file_suffix,data_path=data_path, folder=session,participant=participant)
-        trial_starts = np.where(array==dic['clipcue_stop'])[0]
-        trial_stops = np.where(array==dic['loc_resp'])[0]
+        trial_starts = np.where(array==dic['loc_start'])[0]
+        trial_stops = np.where(array==dic['col_resp'])[0]
         participant_events[session] = np.stack((trial_starts,trial_stops),axis=-1)
     trial_events[participant] = participant_events
 
