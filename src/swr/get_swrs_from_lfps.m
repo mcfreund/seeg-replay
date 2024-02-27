@@ -1,8 +1,21 @@
 function data = get_swrs_from_lfps(thresh, save_flag, plt)
+    % Function:
+    %   Reads a data file created by extract_ca1_data.py, runs vandermeer lab code
+    %   to filter time-series data and detect sharp-wave ripples, does some QC.
+    %
     % Inputs:
     %   thresh   - reject events with proximal contact LFP z-score > thresh
     %   save_flg - save the data
-    
+    %   plt      - save plots of the events (non-functional currently)
+    % 
+    % Outputs:
+    %   data - ca1_data_matrix.mat, with SWR events appended as fields
+    %
+    % Writes (optionally): 
+    %   event_ca1_data.mat - a copy of the data that is output
+    %   [subj]_[epoch]_[contact]_[events].* - plots of swrs
+
+
     % Extract detected ripple events
     % Based off vandermeerlab/code-matlab/example_workflows/LFPeventDetection.m
 
