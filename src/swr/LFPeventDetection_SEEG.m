@@ -117,9 +117,9 @@ cfg_mr.lfpHeight = 10;
 cfg_mr.lfpSpacing = 7; 
 cfg_mr.lfpColor = 'k';
 
-cfg_mr.lfp(1) = lfp_raw; 
-cfg_mr.lfp(2) = lfp_power_z; 
-cfg_mr.lfp(3) = unfiltered_raw; 
+cfg_mr.lfp(1) = unfiltered_raw; 
+cfg_mr.lfp(2) = lfp_raw; 
+cfg_mr.lfp(3) = lfp_power_z;
 
 cfg_mr.lfp(4) = lfp_power_z_above; 
 %cfg_mr.lfp(5) = lfp_power_z_below; 
