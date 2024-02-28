@@ -1,0 +1,27 @@
+
+from src.preproc.params    import ParamsPreProc
+from src.preproc.functions import make_session_info, make_raws, preproc_sessions
+from src.preproc.functions import inspect_sessions, epoch_sessions, clip_sessions
+from src.preproc.utils     import save_plt_if, save_raw_if
+
+# Parameters that control preprocessing functions
+params = ParamsPreProc()
+
+# Generate metadata about which recordings are which
+session_info = make_session_info(params)
+session_info = session_info.loc[0:0,:]
+
+# Use rows to read session data
+raws = make_raws(session_info, params)
+
+# Manually, visually inspect sessions for bad channels
+inspect_sessions(session_info, params)
+
+# Line noise, bandpass, re-referencing, down-sampling
+preproc_sessions(session_info, params)
+
+# Clip sessions into lots of files
+clip_sessions(session_info, params)
+
+# Epoch the data
+epoch_sessions(session_info, params)
