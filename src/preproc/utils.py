@@ -196,7 +196,7 @@ def save_raw_if(raw, params, path_sess, fname):
 
     # Save .fif format
     if params.save_fif:
-        raw.save(fname + '.fif', overwrite = True)
+        raw.save(fname + '_raw.fif', overwrite = True)
 
     # Save .set format
     if params.save_set:

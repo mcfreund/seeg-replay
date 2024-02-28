@@ -254,7 +254,7 @@ def preproc_sessions(session_info, params):
             raw = remove_line_noise(raw, nremove = nremove)
             fname += '_no60hz'
             if params.save_step_rmline:
-                save_raw_if(raw, params, row['path_sess'], fname + "_raw")
+                save_raw_if(raw, params, row['path_sess'], fname)
                 save_plt_if(raw, params, fname)
 
         # Re-referencing
@@ -262,7 +262,7 @@ def preproc_sessions(session_info, params):
             raw, chinfo = rereference(raw, chinfo, method = params.reref_method)
             fname += '_ref'
             if params.save_step_rerefing:
-                save_raw_if(raw, params, row['path_sess'], fname + "_raw")
+                save_raw_if(raw, params, row['path_sess'], fname)
                 save_plt_if(raw, params, fname)
 
         # Bandpass filter data
@@ -270,7 +270,7 @@ def preproc_sessions(session_info, params):
             raw = raw.filter(params.bandpass[0], params.bandpass[1])
             fname += '_bp'
             if params.save_step_bandpass:
-                save_raw_if(raw, params, row['path_sess'], fname + "_raw")
+                save_raw_if(raw, params, row['path_sess'], fname)
                 save_plt_if(raw, params, fname)
 
         ## Annotate bad time samples
@@ -280,7 +280,7 @@ def preproc_sessions(session_info, params):
             fname += '_rmouts'
             
         # Always want a copy of final, full-sample raw
-        save_raw_if(raw, params, row['path_sess'], fname + "_raw")
+        save_raw_if(raw, params, row['path_sess'], fname)
 
         # Downsample the data
         if params.do_downsample_session:
@@ -294,7 +294,7 @@ def preproc_sessions(session_info, params):
             raw.set_annotations(annots)
             fname += '_ds'
             # Last step if applied, so no save flag
-            save_raw_if(raw, params, row['path_sess'], fname + "_raw")
+            save_raw_if(raw, params, row['path_sess'], fname)
             save_plt_if(raw, params, fname)
 
 
