@@ -18,9 +18,26 @@ data_file = '/oscar/home/ajaskir/brainstorm_2024/seeg-replay/src/swr/ca1_data_ma
 load(data_file)
 
 %% pick one electrode for now
+
+% NOTES: highest performing participant, no below contact
 main_contact = data.e0010GP.CMHIP2.ca1_contact; 
 above_contact = data.e0010GP.CMHIP2.contact_above;
 below_contact = data.e0010GP.CMHIP2.contact_below;
+
+% NOTES: noisy contact, both above and below
+% main_contact = data.e0011XQ.RHIPH5.ca1_contact; 
+% above_contact = data.e0011XQ.RHIPH5.contact_above;
+% below_contact = data.e0011XQ.RHIPH5.contact_below;
+
+% NOTES: Noisy?
+% main_contact = data.e0015TJ.LHIPH6.ca1_contact; 
+% above_contact = data.e0015TJ.LHIPH6.contact_above;
+% below_contact = data.e0015TJ.LHIPH6.contact_below;
+
+% NOTES: Mostly seizure activity?
+% main_contact = data.e0017MC.RHIPH3.ca1_contact; 
+% above_contact = data.e0017MC.RHIPH3.contact_above;
+% below_contact = data.e0017MC.RHIPH3.contact_below;
 
 % make filler spike train to use MultiRaster -----------------------------
 n_data_fillers = length(main_contact.data);
@@ -50,10 +67,15 @@ lfp_raw_below = below_contact;
 lfp_raw_below.cfg.history.mfun = {};   
 lfp_raw_below.cfg.history.cfg = {};    
 
+%% Filter raw more if desired
+% cfg_filter = []; cfg_filter.f = [80 100]; cfg_filter.display_filter = 0;
+% unfiltered_raw.cfg.hdr{1}.SamplingFrequency = 1024;
+% unfiltered_raw_MVDM_filter = FilterLFP(cfg_filter, unfiltered_raw);
+
+
 %% Vanilla power and z-scoring (from LFPDetection)
 % create tsd object that contains the fields specified in
 % /vandermeerlab/code-matlab/shared/datatypes/tsd/CheckTSD.m
-
 cfg = []; cfg.output = 'power';
 lfp_power = LFPpower([],lfp_raw); % spits out time x power 
 lfp_power_z = zscore_tsd(lfp_power);
@@ -114,15 +136,16 @@ close all;
 cfg_mr = []; 
 cfg_mr.lfpMax = Inf; 
 cfg_mr.lfpHeight = 10; 
-cfg_mr.lfpSpacing = 7; 
+cfg_mr.lfpSpacing =10; 
 cfg_mr.lfpColor = 'k';
 
+%cfg_mr.lfp(1) = unfiltered_raw_MVDM_filter; 
 cfg_mr.lfp(1) = unfiltered_raw; 
-cfg_mr.lfp(2) = lfp_raw; 
+cfg_mr.lfp(2) = lfp_raw; % bp 80-100
 cfg_mr.lfp(3) = lfp_power_z;
 
 cfg_mr.lfp(4) = lfp_power_z_above; 
-%cfg_mr.lfp(5) = lfp_power_z_below; 
+%cfg_mr.lfp(6) = lfp_power_z_below; 
 
 cfg_mr.evt = SWR_evt;
 MultiRaster(cfg_mr, S_filler);
