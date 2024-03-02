@@ -1,15 +1,14 @@
-function data = get_swrs_from_lfps(thresh, save_flag, plt)
+function lfps = get_swrs_from_lfps(thresh, save_flag)
     % Function:
-    %   Reads a data file created by extract_ca1_data.py, runs vandermeer lab code
+    %   Reads an lfp data file created by extract_ca1_data.py, runs vandermeer lab code
     %   to filter time-series data and detect sharp-wave ripples, does some QC.
     %
     % Inputs:
     %   thresh   - reject events with proximal contact LFP z-score > thresh
     %   save_flg - save the data
-    %   plt      - save plots of the events (non-functional currently)
     % 
     % Outputs:
-    %   data - ca1_data_matrix.mat, with SWR events appended as fields
+    %   lfps - ca1_data_matrix.mat, with SWR events appended as fields
     %
     % Writes (optionally): 
     %   event_ca1_data.mat - a copy of the data that is output
@@ -27,9 +26,11 @@ function data = get_swrs_from_lfps(thresh, save_flag, plt)
     addpath(genpath(path_vml_code));
     
     % Get subject data and contact info
-    data_file = [path_ca1_data,'ca1_data_matrix.mat'];
-    load(data_file, 'data')
-    load(data_file, 'usable_contacts')
+    lfp_file = [path_ca1_data,'ca1_data_matrix.mat'];
+    %load(lfp_file, 'lfps')
+    load(lfp_file, 'data')
+    load(lfp_file, 'usable_contacts')
+    lfps = data;
     
     % List of subject names
     subjs = fieldnames(usable_contacts);
@@ -48,10 +49,10 @@ function data = get_swrs_from_lfps(thresh, save_flag, plt)
             contact = remove_hypthen(subj_contacts);
     
             % Returns contact SWR event starts, ends, power above and below
-            swr = get_swrs_from_contact(subj, contact, data, thresh, plt);
+            swr = get_swrs_from_contact(subj, contact, lfps, thresh);
     
             % Append to data structure
-            data.(subj).(contact).ca1_contact = swr;
+            lfps.(subj).(contact).ca1_contact = swr;
         end
     end
     
@@ -64,7 +65,7 @@ function data = get_swrs_from_lfps(thresh, save_flag, plt)
 end
 
 
-function swr = get_swrs_from_contact(subj, contact, data, thresh, plt)
+function swr = get_swrs_from_contact(subj, contact, data, thresh)
 
     % 
     disp(' ')
@@ -108,6 +109,8 @@ function swr = get_swrs_from_contact(subj, contact, data, thresh, plt)
     swr.tend   = swr_evt.tend(rm <= 0.1);
     swr.pz_above = lfp_power_z_above;
     swr.pz_below = lfp_power_z_below;
+
+    %csvwrite('e0010GP_Encoding_SWR_start_end.csv',[swr.tstart, swr.tend])
 end
 
 function wrap_multi_raster()

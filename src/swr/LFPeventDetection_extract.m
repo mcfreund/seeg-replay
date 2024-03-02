@@ -154,7 +154,6 @@ function AlanaProcess(part, contact, data)
     cfg.operation = '>';
     cfg.threshold = 5;
     SWR_evt = SelectIV(cfg,SWR_evt,'maxSWRpower_z');
-    if lfp_power_z_above > 3:
         
     data.(part).(contact).ca1_contact.tstart = SWR_evt.tstart;
     data.(part).(contact).ca1_contact.tend = SWR_evt.tend;
