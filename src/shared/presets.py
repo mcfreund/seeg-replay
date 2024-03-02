@@ -12,3 +12,5 @@ class PathPresets:
 
             case '_':
                 raise Exception(f'No preset paths for {loc}')
+            
+        self.suffix = '_no60hz_ref_bp_raw.fif'
