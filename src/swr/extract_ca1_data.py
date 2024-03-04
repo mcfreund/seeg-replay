@@ -205,10 +205,10 @@ def get_data(preproc_sfx, path_raw_files, session, participants, contacts, get_a
 
 
 # Location of imaging parsed.xlsx files and preprocessed MNE "raw" files
-#path_task_data = '/oscar/data/brainstorm-ws/seeg_data/Memory Task Data/Imaging/Epilepsy/'
-#data_raw_files = '/oscar/data/brainstorm-ws/megagroup_data/'
-path_imaging   = '/home/dan/projects/work/seeg_data/original/Imaging/Epilepsy/'
-path_raw_files = '/home/dan/projects/work/megagroup_data/'
+path_task_data = '/oscar/data/brainstorm-ws/seeg_data/Memory Task Data/Imaging/Epilepsy/'
+path_raw_files = '/oscar/data/brainstorm-ws/megagroup_data/'
+# path_task_data   = '/home/dan/projects/work/seeg_data/original/Imaging/Epilepsy/'
+# path_raw_files = '/home/dan/projects/work/megagroup_data/'
 
 # Write .mat file?
 save_results = True
@@ -219,7 +219,7 @@ preproc_sfx = '_no60hz_ref_bp_raw.fif'
 sessions = ['Encoding','SameDayRecall','NextDayRecall']
 
 # Get contact information and participants from imaging files
-contacts = find_ca1_contacts(path_imaging)
+contacts = find_ca1_contacts(path_task_data)
 participants = list(contacts.keys())
 #participants = participants[0:1]
 
@@ -235,5 +235,6 @@ for sess in sessions:
     # Save in matlab format
     if save_results:
         mdic = {"data": data_dict, "path_raw_files": path_raw_files, "preproc_sfx": preproc_sfx, \
-            "contacts": contacts, "usable_contacts": usable_contacts, "participants": participants}
+            "contacts": contacts, "usable_contacts": usable_contacts, "participants": participants,
+            "session": sess}
         savemat('ca1_data_matrix_' + sess + '.mat', mdic)
