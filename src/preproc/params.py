@@ -8,9 +8,9 @@ class ParamsPreProc:
 
         s.do_bandpass = True      # Bandpass filtering
         s.do_epoching = False     # Epoching
-        s.do_rerefing = False     # Re-referencing
+        s.do_rerefing = True      # Re-referencing
         s.do_rmline   = True      # Line-noise removal
-        s.do_rmouts   = True      # Outlier removal via MAD threshold
+        s.do_rmouts   = False     # Outlier removal via MAD threshold
         s.do_interact = False     # Interactive MNE outlier removal
         s.do_apply_bads = True    # Apply bad channel definitions (see below)
         s.do_apply_n_components_60hz = True # Apply non-default exclusions for attenuating line noise 
@@ -45,10 +45,10 @@ class ParamsPreProc:
         s.do_trim_post = False
 
         # Clip sections into files (conflicts w/ trim)
-        s.do_clip_pre    = True
-        s.do_clip_dur    = True
-        s.do_clip_post   = True
-        s.do_clip_trials = True
+        s.do_clip_pre    = False
+        s.do_clip_dur    = False
+        s.do_clip_post   = False
+        s.do_clip_trials = False
 
         # Which formats should data be exported in
         s.save_fif = True
@@ -57,38 +57,21 @@ class ParamsPreProc:
         s.save_csv = False
         s.save_plt = False
 
-        # Continuous behavioral data
-
-
         # Save files for intermediate preprocessing steps?
-        s.save_step_rerefing   = False
+        s.save_step_rerefing   = True
         s.save_step_epoching   = False
-        s.save_step_bandpass   = False
-        s.save_step_rmline     = False
+        s.save_step_bandpass   = True
+        s.save_step_rmline     = True
         s.save_step_rmout      = False
 
         # Should we use sub-directories or save to one folder?
         s.use_subdirs = True
         
         # Which subjects to process (leave empty for all)
-        s.subj_list = ['e0011XQ']
-
-        # Prefix for all data operations (read, write)
-        s.path_base = '/oscar/data/brainstorm-ws'
-        s.path_figs = s.path_base + '/megagroup_data/figs'
-        s.path_read = s.path_base + '/seeg_data/Memory Task Data/Epilepsy/Monitoring/'
-        #s.path_save = s.path_base + '/megagroup_data'
-        s.path_save = s.path_base + '/tmp'
-        s.path_chnl = '/oscar/data/brainstorm-ws/seeg_data/Memory Task Data/Imaging/Epilepsy'
-
-        # s.path_base = '/home/dan/projects/work/seeg_data'
-        # s.path_figs = '/home/dan/projects/work/seeg_data/figs'
-        # s.path_read = s.path_base + '/original'
-        # s.path_chnl = s.path_base + '/original/Imaging/Epilepsy'
-        # s.path_save = s.path_base + '/processed'
+        s.subj_list = []
 
         # How many parallel raw-file creation jobs?
-        s.n_jobs = 1
+        s.n_jobs = 4
 
         # Line noise frequency
         s.line_freq = 60

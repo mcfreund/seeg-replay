@@ -4,6 +4,8 @@ import mne
 import pickle
 import meegkit
 import scipy
+import scipy as sp
+import ipdb
 
 
 import pandas as pd
@@ -13,6 +15,10 @@ import itertools
 import bz2
 import _pickle
 
+from datetime import datetime
+
+from src.shared.utils import dill_read
+
 def load_pkl(path):
     """ loads compressed pickle file """
 
@@ -20,94 +26,108 @@ def load_pkl(path):
         neural_data = _pickle.load(f)
     return neural_data
 
-def find_trials(events, verbose=False):
+
+def get_trials_from_event_file(event_file):
     """ finds *all* trials with associated codes in an events file """
-    events_signal = load_pkl(events)
-    codes = events_signal['signal']
-    fs = events_signal['fs']
+    events = load_pkl(event_file)
 
-    trials = {0: []}
+    # Get (event code, sample number) event tuples
+    signals = events['signal']
 
-    count = 0
-    for c in codes:
-        if c[0] == 9:
-            count += 1
-            trials[count] = [c]
-            if count > 1 and trials[count-1][-1][0] != 18 and verbose:
-                # assert trials[count-1][-1][0] == 18
-                print('WARNING: parsed trial {} does not end in 18'.format(count))
-        else:
-            trials[count].append(c)
+    # The relevant codes are
+    # 20: "fix_start",
+    # 22: "fix_resp",
+    # 72: "clip_start",
+    # 74: "clip_stop",
+    # 82: "clipcue_start",  # This is only in encoding trials
+    # 84: "clipcue_stop",   # This is strangely in recall trials
+    # 36: "loc_start",
+    # 38: "loc_resp",
+    # 56: "col_start",
+    # 58: "col_resp",
 
-    if verbose:
-        print('found {} trials with {} codes'.format(count, len(codes)))
+    # List of relevant codes:
+    relevant_codes = np.array([9, 20, 22, 72, 74, 82, 84, 36, 38, 56, 58, 18])
 
-    return fs, codes, trials
+    # Organize tuples into trials based on codes
+    trials  = []
+    ignored = []
+    trial_num = 0
+    prev_code = None
+    for pair in signals:
+        # Trial code is first element, time is second
+        code = pair[0]
+        
+        # Start a new trial if we see a 9
+        if code == 9:
 
-def ranges(i):
-    """ just provides better print() output for trials """
-    for a, b in itertools.groupby(enumerate(i), lambda pair: pair[1] - pair[0]):
-        b = list(b)
-        yield b[0][1], b[-1][1]
-
-# this is the work-horse function that aligns the trials in the behavioral files with those in the neural ones
-def match_trials(bhv, codes, trials, fs, margin=0.1, verbose=False):
-    """ matches codes from behavioral data with neural events - returns dictionary of trials """
-    matches = {}
-    c = 0
-    cmax = 0
-    for tr in bhv:
-        bhv_tr_len = np.asarray(bhv[tr]['BehavioralCodes']['CodeTimes'][-1] - bhv[tr]['BehavioralCodes']['CodeTimes'][0], dtype=int)
-        m = False
-        while c < len(trials) and m == False:
-            # check for valid trials
-            if len(trials[c]) > 1:
-                tr_codes = [j[0] for j in trials[c]]
-                if trials[c][0][0] == 9 and 18 in tr_codes:
-                    tr_start = trials[c][0][1]
-
-                    i18 = tr_codes.index(18)
-
-                    tr_end = trials[c][i18][1]
-                    nrl_tr_len = (tr_end - tr_start) / fs * 1000 # convert to milliseconds
-                    diff = 1 - nrl_tr_len/bhv_tr_len
-                    if abs(diff) < margin:
-                        if verbose:
-                            print('Aligned Trial {} (acc: {:.3f}%)'.format(tr, diff*100))
-                        matches[tr] = trials[c]
-                        m = True
-                        c += 1
-                        cmax = c
-                    else:
-                        c += 1
-                else:
-                    c += 1
+            # Start new trial, code list, and ignored list
+            trials.append([pair])
+            ignored.append([])
+        
+        elif code in relevant_codes:
+            # Trials may start without a start code, so check if we skipped one or more
+            if prev_code != None:
+                skipped = np.where(code == relevant_codes) <= np.where(prev_code == relevant_codes)
             else:
-                c+=1
-        c = cmax
+                skipped = True
 
-        if m == False and verbose:
-            print('could not find match for {}'.format(tr))
+            # If we skipped a start code, need to init a new trial list
+            if skipped:
+                trials.append([pair])
+                ignored.append([])
+                skipped = False
 
-    match_range = ranges(matches.keys())
+            # If we didn't start a new trial, organize next code under current trial
+            trials[-1].append(pair)
 
-    rstr = []
-    for i in match_range:
-        if i[0] == i[1]:
-            rstr.append('{}'.format(i[0]))
-        else:
-            rstr.append('{}-{}'.format(i[0], i[1]))
+        elif len(trials) > 0:
+            # There are codes e.g. 16 and 27 that we have no info on...
+            ignored[-1].append(code)
 
-    match_range = ', '.join(list(rstr))
-    print('found matches for trials {}'.format(match_range))
+        # Save whatever the previous code was
+        prev_code = code
+        
+    #print(f'List of codes ignored by trial:')
+    #print(ignored)
 
-    return matches
+    #### Quality control trial blocks, turn them into arrays ###
+    
+    # Check all trials are strictly in order
+    times = [trial[0][1] for trial in trials]
+    in_order = [time > prev for time, prev in zip(times[1:],times[0:-1])]
+    if ~np.all(in_order): print(f'Trial start times are not in order!')
 
-def read_subj_channel_info(subj, path_chnl):
+    for i, trial in enumerate(trials):
+
+        # Check all the trials have all the codes we care about
+        missing = []
+        for code in relevant_codes:
+            if code not in [pair[0] for pair in trial]:
+                missing.append(code)
+
+        # Check all codes are strictly in order
+        times = [pair[1] for pair in trial]
+        in_order = [time > prev for time, prev in zip(times[1:],times[0:-1])]
+        if ~np.all(in_order): print(f'Trial {i+1} code times are not in order!')
+
+        # Notify user of missing and ignored codes
+        if len(missing) > 0 or len(ignored[i]) > 0:
+            print(f'Trial {i+1} has missing and ignored {missing}, {ignored[i]}')
+
+        # Convert to array, 
+        trials[i] = np.array(trial)
+        trials[i][:,1] = trials[i][:,1]
+
+    # Return sampling frequency and trial list
+    return trials
+
+
+def read_subj_channel_info(subj, paths):
     """ wrangles channel / anatomical info from excel files. optionally sorts row order to match channel order in a signal_labels object."""
 
     # Read channel information file
-    chinfo = pd.read_excel(os.path.join(path_chnl, subj, "parsed.xlsx"))
+    chinfo = pd.read_excel(os.path.join(paths.chnl, subj, "parsed.xlsx"))
 
     ## Create new columns in chinfo that separate electrode and site/contact info:
     ## NB: sites nested in electrodes
@@ -139,53 +159,6 @@ def load_session_seeg(dir, contacts = None):
 
     return data, contacts
 
-def construct_raw(session_row, params):
-    """ Constructs raw data object for a given day. Also loads metadata about channels, in chinfo. 
-    NB: only the intersection of channel names in chinfo["channel"] and names of the SEEG day subdirectory is kept.
-    I.e., we keep only channels for which we have both data and their location (assuming no typos in names).
-    """
-    subj = session_row['participant_id']
-    sess = session_row['session']
-    dir  = session_row['subdir_orig']
-
-    # Read channel information
-    chinfo = read_subj_channel_info(subj, params.path_chnl)
-
-    # Read SEEG data in intersection of contacts data files
-    data, contacts = load_session_seeg(dir = params.path_read + '/' + dir, contacts = chinfo["contact"])
-
-    # Keep only contacts from data in chinfo
-    chinfo = chinfo[chinfo["contact"].isin(contacts)]
-    
-    # Read events file (from processed data path)
-    events = pd.read_csv(os.path.join(session_row['path_sess'], subj + "_" + sess + "_events.csv"))
-    
-    # Insert column of zeros in events (why?)
-    events = np.stack([events["time"], np.zeros(len(events)), events["code"]]).T.astype(int)
-    
-    # Rescale signal
-    signals = np.stack([d["signal"] for d in data]) / params.scale # ideally, in V
-
-    # MNE metadata
-    n_channels = len(data)
-    ch_names   = chinfo["contact"].tolist()
-    ch_types   = ["seeg"] * n_channels
-
-    # Create MNE structure
-    info = mne.create_info(ch_names, ch_types = ch_types, sfreq = params.sample_freq_native)
-
-    # Add line frequency to MNE structure
-    info["line_freq"] = params.line_freq
-
-    ## Construct MNE "raw" type (ensure signals and stim data order match ch_types/names)
-    raw = mne.io.RawArray(signals, info)
-    
-    ## Add events as annotations:
-    annots = mne.annotations_from_events(events, params.sample_freq_native, event_desc = params.trigger_to_desc_dict)
-    raw.set_annotations(annots)
-    
-    return raw, chinfo
-
 
 # Save selector for raws
 def save_raw_if(raw, params, path_sess, fname):
@@ -214,35 +187,88 @@ def save_raw_if(raw, params, path_sess, fname):
 
 
 # Plot functions
-def save_plt_if(raw, params, fname):
+def save_plt_if(raw, params, fname, paths):
     ''' Function for saving plots, if selected in params.'''
 
     if params.save_plt:
         fig = raw.compute_psd().plot(show = False)
         fig.axes[0].set_title("raw timeseries: " + fname + "\n" + t)
-        fn_psd = os.path.join(params.path_figs, fname ,'.png')
+        fn_psd = os.path.join(paths.figs, fname ,'.png')
         fig.savefig(fn_psd)
 
 
+def summarize_behavior_timing(bhv):
+    # Want timing data on every trial to match against neural data
+    time_info = pd.DataFrame(columns = ['Trial','TrialStart','Code9Time','Code22Time','Code38Time','Code58Time','Code18Time'])
 
-def read_bhv(behavior):
+    # Codes to look for timing informatoin for (should be more diagnostic than start and end times)
+    codes     = [9,22,38,58,18]
+    code_flds = ['Code9Time','Code22Time','Code38Time','Code58Time','Code18Time']
+
+    # Entries bhv are dictionaries of trial info from read_bhv_matfile and mat_to_dict
+    for mat in bhv:
+        # Save trials in order, keeping trial nums & relative start times (yes, "absolute" is mislabeled)
+        time_info.loc[mat['Trial'], ['Trial']]      = mat['Trial']
+        time_info.loc[mat['Trial'], ['TrialStart']] = mat['AbsoluteTrialStartTime']
+
+        # Mask out times that codes occurred, and save a list of code times
+        msk = [i in codes for i in mat['BehavioralCodes']['CodeNumbers']]
+        time_info.loc[mat['Trial'], code_flds] = mat['BehavioralCodes']['CodeTimes'][msk]
+
+    return time_info
+
+# 
+def check_behavior_against_neural_timing(time_info, trials):
+    
+    # Compute intervals in behavioral timing between trial starts
+    intervals = np.diff(time_info['TrialStart'])/1000
+
+    # Get neural data trial start times and intervals between them
+    trial_start_samples = [pair[0,1] for pair in trials]
+    trial_start_times   = np.array(trial_start_samples)/1024
+    trial_start_diffs   = np.diff(trial_start_times)
+
+    # We'll look for the behavioral start-interval profile in the neural data
+    n_trials = len(trial_start_diffs)+1
+    n_found  = len(intervals) + 1
+    n_shifts = n_trials - n_found + 1
+
+    # Check timing discrepancy for each possible index shift:
+    error = np.full(n_shifts, np.nan)
+    for shift in range(n_shifts):
+        error[shift] = np.sum(np.abs(trial_start_diffs[shift:(n_found-1+shift)] - intervals))
+
+    # Report how good each index shift looked
+    print(f'Mismatch error by shift index: ')
+    print(np.round(error).astype(int))
+
+    # This error really should not be above maybe a second
+    assert min(error) < 1
+    
+    # Determine which shift to use
+    use_shift = np.where(error == min(error))[0][0]
+    
+    # Report
+    print(f'Starting match at index {use_shift} with total discrepancy {error[use_shift]:2f}[s].')
+
+    return use_shift
+
+
+
+def read_bhv_matfile(subj_behav_file):
     """ load behavioral data from .mat file and extra trial data
         returns dictionary of all behavioral data per trial
     """
-    bhv = {}
-    existing_trials = 0
+    bhv = []
 
-    f = load_mat(behavior)
+    f = sp.io.loadmat(subj_behav_file, struct_as_record=False, squeeze_me=True)
     for k in f.keys():
         if k[0:5] == 'Trial' and k[5:].isdigit():
             trial = f[k]
-            trial_num = int(k[5:]) + existing_trials
-            bhv[trial_num] = mat_to_dict(trial)
+            bhv.append(mat_to_dict(trial))
 
     return bhv
 
-def load_mat(fmat):
-    return sio.loadmat(fmat, struct_as_record=False, squeeze_me=True)
 
 def mat_to_dict(mat):
     """ convert mat_struct object to a dictionary recursively
@@ -251,22 +277,12 @@ def mat_to_dict(mat):
 
     for field in mat._fieldnames:
         val = mat.__dict__[field]
-        if isinstance(val, sio.matlab.mat_struct):
+        if isinstance(val, sp.io.matlab.mat_struct):
             dict[field] = mat_to_dict(val)
         else:
             dict[field] = val
 
     return dict
-
-
-
-# def load_cpkl(path):
-#     """ loads compressed pickle file called by load_electrodes() """
-
-#     with bz2.open(path, 'rb') as f:
-#         neural_data = cPickle.load(f)
-#     return neural_data
-
 
 
 def remove_line_noise(raw, nremove = 1, nfft = 1024, nkeep = None, blocksize = None):
@@ -290,7 +306,7 @@ def remove_line_noise(raw, nremove = 1, nfft = 1024, nkeep = None, blocksize = N
     # Copy output back to raw
     raw_out._data = out.T
 
-    return raw_out
+    return raw_out #out.T
 
 
 def _cluster_contacts(signal_list):
@@ -399,7 +415,7 @@ def _reref_electrodes(signals, signal_list, method = 'laplacian', selfref_first 
     return signals_new, sig_list_new
 
 
-def rereference(raw, chinfo, method = 'laplacian', drop_bads = True, selfref_first = False):
+def rereference(raw, chinfo, path_sess, method = 'laplacian', drop_bads = True, selfref_first = False):
     """ wrapper for feeding mne objects into  _ref_electrodes() """
 
     raw_copy = raw.copy()
@@ -417,7 +433,7 @@ def rereference(raw, chinfo, method = 'laplacian', drop_bads = True, selfref_fir
         chinfo["survived"] = chinfo["contact"].isin(ch_names_ref)
         ## Save csv file of those that survived. As with the csv written by inspect_raws(), this is primarily for 
         ## record keeping and is not expected to be used by downstream analyses.
-        fname_out = os.path.join(row['path_sess'], "survived_laplacian_" + time.strftime("%Y%m%d-%H%M%S") + ".csv")
+        fname_out = os.path.join(path_sess, "survived_laplacian_" + datetime.now().strftime("%Y%m%d-%H%M%S") + ".csv")
         chinfo[["index", "contact", "survived"]].to_csv(fname_out, index = False)
 
     ## add data back to raw
