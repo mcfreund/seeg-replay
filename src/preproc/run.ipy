@@ -9,7 +9,6 @@ params = ParamsPreProc()
 
 # Generate metadata about which recordings are which
 session_info = make_session_info(params, paths)
-session_info = session_info[0:3]
 
 # Use rows to read session data
 #raws = make_raws(session_info, params, paths)

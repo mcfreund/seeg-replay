@@ -17,7 +17,6 @@ class PathPresets:
                 # Location of imaging parsed.xlsx files and preprocessed MNE "raw" files for SWR code
                 self.imaging        = '/home/dan/projects/work/seeg_data/original/Imaging/Epilepsy/'
                 self.processed_raws = '/home/dan/projects/work/seeg_data/processed/'
-                self.processed_raws = '/home/dan/projects/work/seeg_data/megagroup/'
 
                 # Preprocessing data operation paths
                 self.figs         = '/home/dan/projects/work/seeg_data/figs'

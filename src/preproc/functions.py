@@ -190,6 +190,7 @@ def make_raws(session_info, params, paths):
     # Parallelize 
     raws = Parallel(n_jobs = params.n_jobs)(delayed(parallel)(row, params, paths) for i, row in session_info.iterrows())
     
+    # Local alternate
     #for i, row in session_info.iterrows():
     #    raws = parallel(row, params, paths)
 
@@ -218,17 +219,24 @@ def construct_raw(session_row, params, paths):
     events = dill_read(os.path.join(session_row['path_sess'], subj + "_" + sess + "_events.pt"))
     events = np.stack([events[:,1], np.zeros_like(events[:,0]), events[:,0]]).T
     
+    # Debugging checkpoint 1
+    #dill_save(data,'./data/chkpts/data_chkpt_cnstrct_1.pt')
+
     # Rescale signal
     signals = np.stack([d["signal"] for d in data]) / params.scale # ideally, in V
 
     # Create MNE metadata
     n_channels = len(data)
-    ch_names   = chinfo["contact"].tolist()
+    #ch_names  = chinfo["contact"].tolist()
+    ch_names   = [d['label'] for d in data ] # this preserves order properly!!!
     ch_types   = ["seeg"] * n_channels
 
     # Create MNE structure and add line frequency to it
     info = mne.create_info(ch_names, ch_types = ch_types, sfreq = params.sample_freq_native)
     info["line_freq"] = params.line_freq
+
+    # Debugging checkpoint 2
+    # dill_save(signals, './data/chkpts/data_chkpt_cnstrct_2.pt')
 
     ## Construct MNE "raw" type (ensure signals and stim data order match ch_types/names)
     raw = mne.io.RawArray(signals, info)
@@ -320,6 +328,33 @@ def preproc_sessions(session_info, params, paths):
             if params.save_step_rmline:
                 save_raw_if(raw, params, row['path_sess'], fname)
                 save_plt_if(raw, params, fname, paths)
+
+        # # Bipolar, for reference
+        # if params.do_rerefing:
+        #     copy = raw.copy()
+        #     copy, chinfo_copy = rereference(copy, chinfo, row['path_sess'], method = 'bipolar')
+        #     if params.save_step_rerefing:
+        #         save_raw_if(copy, params, row['path_sess'], fname + '_bip')
+        #         save_plt_if(copy, params, fname, paths)
+
+        # # Unipolar, for reference
+        if params.do_rerefing:
+            copy = raw.copy()
+            copy, chinfo_copy = rereference(copy, chinfo, row['path_sess'], method = 'unipolar')
+            if params.save_step_rerefing:
+                save_raw_if(copy, params, row['path_sess'], fname + '_uni')
+                save_plt_if(copy, params, fname, paths)
+
+                # Conserve memroy
+                del copy
+        
+        # # Laplacian w/ self-ref, for reference
+        # if params.do_rerefing:
+        #     copy = raw.copy()
+        #     copy, chinfo_copy = rereference(copy, chinfo, row['path_sess'], method = 'laplacian', selfref_first=True)
+        #     if params.save_step_rerefing:
+        #         save_raw_if(copy, params, row['path_sess'], fname + '_srf')
+        #         save_plt_if(copy, params, fname, paths)
 
         # Re-referencing
         if params.do_rerefing:

@@ -17,7 +17,7 @@ import _pickle
 
 from datetime import datetime
 
-from src.shared.utils import dill_read
+from src.shared.utils import *
 
 def load_pkl(path):
     """ loads compressed pickle file """
@@ -156,6 +156,9 @@ def load_session_seeg(dir, contacts = None):
         contacts = [contact for contact, file in zip(contacts, data_files) if os.path.exists(file)]
         
     data = [load_pkl(fn) for fn in data_files]
+
+    # Debugging checkpoint
+    # dill_save(data, './data/chkpts/data_chkpt_load.pt')
 
     return data, contacts
 
@@ -439,12 +442,11 @@ def rereference(raw, chinfo, path_sess, method = 'laplacian', drop_bads = True, 
     ## add data back to raw
     dropped_chs = [ch for ch in raw_copy.ch_names if ch not in ch_names_ref]  ## drop
     raw_copy.drop_channels(dropped_chs)
-    if raw_copy.ch_names != ch_names_ref:
+    if not all(np.sort(raw_copy.ch_names) == np.sort(ch_names_ref)):
         raise Exception("ch_names_ref and raw_copy.ch_names do not match.")
-    raw_copy._data = data_ref
-
+    raw_copy[ch_names_ref] = data_ref
+    
     return raw_copy, chinfo
-
 
 
 
@@ -484,6 +486,7 @@ def get_times_from_notes(raw, str_beg, str_end):
     assert(all(times[:,0] <  times[:,1]))
 
     return times
+
 
 def clip_iterator(raw, params, str_beg, str_end, path, fname, sfx, times = None):
 
