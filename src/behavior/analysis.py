@@ -13,7 +13,7 @@ save_figs = True
 ###
 
 # Load data
-data  = pd.read_csv("behavioral_data.csv")
+data  = pd.read_csv("/oscar/data/brainstorm-ws/megagroup_data/behavioral_data.csv")
 
 # Subject info
 sids  = data['participant_id'].unique()
@@ -39,8 +39,8 @@ for snum, subj in enumerate(sids):
 
         # The data itself
         trials  = data.loc[msk_subj & msk_sess, 'trial_num']
-        err_pos = 180*2*abs( data.loc[msk_subj & msk_sess,'error_position'])
-        err_col = 180*2*abs( data.loc[msk_subj & msk_sess,'error_color'   ])
+        err_pos = abs( data.loc[msk_subj & msk_sess,'error_position'])
+        err_col = abs( data.loc[msk_subj & msk_sess,'error_colorpos'   ])
 
         # Data length
         dlen = np.shape(err_pos)[0]
@@ -95,6 +95,6 @@ for snum, subj in enumerate(sids):
         plt.tight_layout()
     
     # Save outside subplot loop
-    if save_figs: plt.savefig('performance-subject-' + str(snum) + '.png')
+    if save_figs: plt.savefig('../../figs/behavior/performance-subject-' + str(snum) + '-' + str(subj) + '.png')
 
 
