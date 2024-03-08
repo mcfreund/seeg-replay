@@ -7,7 +7,7 @@ library(patchwork)
 
 # LOAD DATA ####################################################################
 
-df_behavior <- read.csv("behavioral_data.csv")
+df_behavior <- read.csv("/oscar/data/brainstorm-ws/megagroup_data/behavioral_data.csv")
 df_behavior$session <- factor(df_behavior$session, 
                               levels = c("Encoding", "SameDayRecall", "NextDayRecall"))
 df_behavior$trial_num <- factor(df_behavior$trial_num)
@@ -65,7 +65,61 @@ verify_session_order <- date_and_times %>%
   mutate(order_verified = ifelse(encoding_sameday_day_same & encoding_day_before_nextday &
                                    ((encoding_sameday_hr_same & encoding_min_less_sameday_min) | (!encoding_sameday_hr_same & encoding_hr_less_sameday_hr)), 
                                    TRUE, FALSE))
+
+
+# CHANGES FROM ENCODING ###############################################################
+error_changes <- df_behavior %>%
+  select(c(participant_id, session, condition, error_colorpos, error_position)) %>%
+  group_by(participant_id, condition) %>%
+  pivot_wider(names_from = session, values_from = c(error_colorpos, error_position)) %>%
+  mutate(EtoSD_error_position_change = abs(abs(error_position_Encoding) - abs(error_position_SameDayRecall))) %>%
+  mutate(EtoSD_error_colorpos_change = abs(abs(error_colorpos_Encoding) - abs(error_colorpos_SameDayRecall))) %>%
+  mutate(EtoND_error_position_change = abs(abs(error_position_Encoding) - abs(error_position_NextDayRecall))) %>%
+  mutate(EtND_error_colorpos_change = abs(abs(error_colorpos_Encoding) - abs(error_colorpos_NextDayRecall))) %>%
+  mutate(SDtoND_error_position_change = abs(abs(error_position_SameDayRecall) - abs(error_position_NextDayRecall))) %>%
+  mutate(SDtoND_error_colorpos_change = abs(abs(error_colorpos_SameDayRecall) - abs(error_colorpos_NextDayRecall)))
+
+ggplot(error_changes) +
+  geom_point(aes(x = abs(error_position_SameDayRecall), abs(error_position_NextDayRecall))) +
+  facet_wrap(~participant_id)
+
+ggplot(error_changes) +
+  geom_point(aes(x = abs(error_colorpos_SameDayRecall), abs(error_colorpos_NextDayRecall))) +
+  facet_wrap(~participant_id)
+
+ggplot(error_changes) +
+  geom_point(aes(x = abs(EtoSD_error_position_change), abs(error_position_NextDayRecall))) +
+  facet_wrap(~participant_id)
+               
+
+ggplot(error_changes) +
+  geom_point(aes(x = condition, y = EtoSD_error_position_change)) +
+  geom_line(aes(group = participant_id, x = condition, y = EtoSD_error_position_change), color = "red") +
   
+  geom_point(aes(x = condition, y = EtoND_error_position_change)) +
+  geom_line(aes(group = participant_id, x = condition, y = EtoND_error_position_change), color = "green") +
+
+  facet_wrap(~participant_id) +
+  theme_bw() +
+  coord_cartesian(ylim = c(0,180)) +
+  scale_y_continuous(breaks = seq(0, 180, by = 45)) + 
+  labs(title = "Position Error Changes")
+
+ggplot(error_changes) +
+
+  geom_point(aes(x = condition, y = EtoSD_error_colorpos_change)) +
+  geom_line(aes(group = participant_id, x = condition, y = EtoSD_error_colorpos_change), color = "blue") +
+  
+  geom_point(aes(x = condition, y = EtND_error_colorpos_change)) +
+  geom_line(aes(group = participant_id, x = condition, y = EtND_error_colorpos_change), color = "orange") +
+  
+  facet_wrap(~participant_id) +
+  theme_bw() +
+  coord_cartesian(ylim = c(0,180)) +
+  scale_y_continuous(breaks = seq(0, 180, by = 45)) + 
+  labs(title = "Color Error Changes")
+
+
 
 # MEMORY METRICS ###############################################################
 
