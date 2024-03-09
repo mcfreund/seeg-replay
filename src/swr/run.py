@@ -3,6 +3,7 @@ from src.shared.utils      import *
 from src.swr.functions_ca1 import *
 from src.swr.functions_swr import *
 import ipdb
+import dill
 
 read     = False
 paths    = PathPresets('dan-xps-15')

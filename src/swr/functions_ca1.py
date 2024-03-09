@@ -1,6 +1,7 @@
 import os, mne
 import pandas as pd
 from scipy.io import savemat
+import dill
 
 from src.shared.paths import *
 from src.shared.utils import *
