@@ -581,8 +581,9 @@ def separate_channel_freq(epochs):
         ch_name, freq = item.split("_")
         ch_names.append(ch_name)
         freqs.append(freq)
-    freqs = np.unique(freqs)
-    ch_names = np.unique(ch_names)
+    ## order-preserving 'unique':
+    freqs = list(dict.fromkeys(freqs))
+    ch_names = list(dict.fromkeys(ch_names))
     times = epochs.times
     epoarray = epochs._data
     reshaped_tf = epoarray.reshape(epoarray.shape[0], len(ch_names), len(freqs), len(times))
@@ -610,7 +611,7 @@ def save_epochs(epochs, metadata, fname, params):
                 hf.create_dataset("freqs",  data = freqs)
         else:
             epoarray = epochs._data
-            epoarray = np.transpose(epochs, [0, 2, 1])
+            epoarray = np.transpose(epoarray, [0, 2, 1])
             with h5py.File(fname + '.h5', 'w') as hf:
                 hf.create_dataset("epochs",  data = epoarray)
                 hf.create_dataset("dimnames",  data = ["trial", "time", "channel"])
