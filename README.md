@@ -49,11 +49,11 @@ Miscellaneous shared code:
 
 Sharp-wave ripple and oscillatory event-detection code:
 ```
-'./src/swrs/legacy/extract_ca1_data.py'        : Old file for getting CA1 data into matlab format
-'./src/swrs/legacy/vl-shared/'                 : Copy of Van der Meer lab SWR toolbox
-'./src/swrs/legacy/LFPeventDetection_SEEG.m/'  : Matlab code for using Van der Meer toolbox on extract_ca1_data.py output
-'./src/swrs/legacy/riple_events.py/'           : Computes ripple event statistics
-'./src/swrs/legacy/visualize_events.py/'       : I don't know what this does
+'./src/swrs/initial/extract_ca1_data.py'       : Original file for getting CA1 data into matlab format
+'./src/swrs/initial/vl-shared/'                : Copy of Van der Meer lab SWR toolbox
+'./src/swrs/initial/LFPeventDetection_SEEG.m/' : Matlab code for using Van der Meer toolbox on extract_ca1_data.py output
+'./src/swrs/initial/riple_events.py/'          : Computes ripple event statistics
+'./src/swrs/initial/visualize_events.py/'      : File for showing ripples
 
 './src/swrs/functions_ca1.py'                  : Aggregates LFP data from electrodes for processing
 './src/swrs/functions_swr.py'                  : Functions for computing oscillatory events
