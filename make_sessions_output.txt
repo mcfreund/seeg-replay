@@ -1,0 +1,735 @@
+Participant Day, Directory: 0, 2020-11-12_e0010GP_00
+
+ID: e0010GP
+Day: 0
+Phase: Encoding
+Trial 4 has missing and ignored [82], []
+Trial 5 has missing and ignored [82], []
+Trial 6 has missing and ignored [82], []
+Trial 11 has missing and ignored [], [27]
+Trial 37 has missing and ignored [82], []
+Trial 38 has missing and ignored [82], []
+Trial 39 has missing and ignored [82], []
+Trial 40 has missing and ignored [82], []
+Trial 41 has missing and ignored [82], []
+Trial 42 has missing and ignored [82], []
+Trial 43 has missing and ignored [82], []
+Trial 44 has missing and ignored [82], [94]
+Trial 45 has missing and ignored [82], []
+Trial 46 has missing and ignored [82], []
+Trial 47 has missing and ignored [82], []
+Trial 48 has missing and ignored [82], []
+Trial 49 has missing and ignored [82], []
+Trial 50 has missing and ignored [82], []
+Trial 51 has missing and ignored [82], [16]
+Mismatch error by shift index: 
+[359 343 316 262 255 233   0 270 284 222 244 265 238 273 257 230 273 279
+ 240 261 288 264]
+Starting match at index 6 with total discrepancy 0.032105[s].
+Trials in event file: 51
+Trials in behavior  : 30  
+Interpreting trials 6-36 as Encoding
+
+ID: e0010GP
+Day: 0
+Phase: SameDayRecall
+Trial 4 has missing and ignored [82], []
+Trial 5 has missing and ignored [82], []
+Trial 6 has missing and ignored [82], []
+Trial 11 has missing and ignored [], [27]
+Trial 37 has missing and ignored [82], []
+Trial 38 has missing and ignored [82], []
+Trial 39 has missing and ignored [82], []
+Trial 40 has missing and ignored [82], []
+Trial 41 has missing and ignored [82], []
+Trial 42 has missing and ignored [82], []
+Trial 43 has missing and ignored [82], []
+Trial 44 has missing and ignored [82], [94]
+Trial 45 has missing and ignored [82], []
+Trial 46 has missing and ignored [82], []
+Trial 47 has missing and ignored [82], []
+Trial 48 has missing and ignored [82], []
+Trial 49 has missing and ignored [82], []
+Trial 50 has missing and ignored [82], []
+Trial 51 has missing and ignored [82], [16]
+Mismatch error by shift index: 
+[349 324 300 256 195 184  69  63  59  61  66  52  54  59  61  57  61  60
+  66  69  66  67 213 210 202 203 201 188 187 183 172 179 172 158 172 167
+   0]
+Starting match at index 36 with total discrepancy 0.013811[s].
+Trials in event file: 51
+Trials in behavior  : 15  
+Interpreting 36-51 as SameDayRecall
+
+Participant Day, Directory: 1, 2020-11-13_e0010GP_01
+
+ID: e0010GP
+Day: 1
+Phase: NextDayRecall
+Trial 1 has missing and ignored [82], []
+Trial 2 has missing and ignored [82], []
+Trial 3 has missing and ignored [82], []
+Trial 4 has missing and ignored [82], []
+Trial 5 has missing and ignored [82], []
+Trial 6 has missing and ignored [82], []
+Trial 7 has missing and ignored [82], []
+Trial 8 has missing and ignored [82], []
+Trial 9 has missing and ignored [82], []
+Trial 10 has missing and ignored [82], []
+Trial 11 has missing and ignored [82], []
+Trial 12 has missing and ignored [82], []
+Trial 13 has missing and ignored [82], []
+Trial 14 has missing and ignored [82], []
+Trial 15 has missing and ignored [82], []
+Trial 16 has missing and ignored [82], []
+Trial 17 has missing and ignored [82], []
+Trial 18 has missing and ignored [82], []
+Trial 19 has missing and ignored [82], []
+Trial 20 has missing and ignored [82], []
+Trial 21 has missing and ignored [82], []
+Trial 22 has missing and ignored [82], []
+Trial 23 has missing and ignored [82], []
+Trial 24 has missing and ignored [82], [27]
+Trial 25 has missing and ignored [82], []
+Trial 26 has missing and ignored [82], []
+Trial 27 has missing and ignored [82], []
+Trial 28 has missing and ignored [82], []
+Trial 29 has missing and ignored [82], []
+Trial 30 has missing and ignored [82], []
+Trial 31 has missing and ignored [82], []
+Mismatch error by shift index: 
+[146   0]
+Starting match at index 1 with total discrepancy 0.024099[s].
+Trials in event file: 31
+Trials in behavior  : 30  
+Interpreting 1-31 as NextDayRecall
+
+Participant Day, Directory: 0, 2021-01-17_e0011XQ_00
+
+ID: e0011XQ
+Day: 0
+Phase: Encoding
+Trial 4 has missing and ignored [82], []
+Trial 5 has missing and ignored [82], []
+Trial 6 has missing and ignored [82], []
+Trial 37 has missing and ignored [82], []
+Trial 38 has missing and ignored [82], []
+Trial 39 has missing and ignored [82], []
+Trial 40 has missing and ignored [82], []
+Trial 41 has missing and ignored [82], []
+Trial 42 has missing and ignored [82], []
+Trial 43 has missing and ignored [82], []
+Trial 44 has missing and ignored [82], []
+Trial 45 has missing and ignored [82], []
+Trial 46 has missing and ignored [82], []
+Trial 47 has missing and ignored [82], []
+Trial 48 has missing and ignored [82], []
+Trial 49 has missing and ignored [82], []
+Trial 50 has missing and ignored [82], []
+Trial 51 has missing and ignored [82], []
+Mismatch error by shift index: 
+[234 224 215 172 168 158   0 123 129 119 122 129 133 142 150 129 148 149
+ 153 151 157 159]
+Starting match at index 6 with total discrepancy 0.026204[s].
+Trials in event file: 51
+Trials in behavior  : 30  
+Interpreting trials 6-36 as Encoding
+
+ID: e0011XQ
+Day: 0
+Phase: SameDayRecall
+Trial 4 has missing and ignored [82], []
+Trial 5 has missing and ignored [82], []
+Trial 6 has missing and ignored [82], []
+Trial 37 has missing and ignored [82], []
+Trial 38 has missing and ignored [82], []
+Trial 39 has missing and ignored [82], []
+Trial 40 has missing and ignored [82], []
+Trial 41 has missing and ignored [82], []
+Trial 42 has missing and ignored [82], []
+Trial 43 has missing and ignored [82], []
+Trial 44 has missing and ignored [82], []
+Trial 45 has missing and ignored [82], []
+Trial 46 has missing and ignored [82], []
+Trial 47 has missing and ignored [82], []
+Trial 48 has missing and ignored [82], []
+Trial 49 has missing and ignored [82], []
+Trial 50 has missing and ignored [82], []
+Trial 51 has missing and ignored [82], []
+Mismatch error by shift index: 
+[228 226 209 173 164 153  55  47  54  52  48  38  54  50  47  50  37  44
+  47  44  46  53 118 114 129 132 124 111 132 124 117 137 119 122 145 124
+   0]
+Starting match at index 36 with total discrepancy 0.016977[s].
+Trials in event file: 51
+Trials in behavior  : 15  
+Interpreting 36-51 as SameDayRecall
+
+Participant Day, Directory: 1, 2021-01-18_e0011XQ_01
+
+ID: e0011XQ
+Day: 1
+Phase: NextDayRecall
+Trial 1 has missing and ignored [82], []
+Trial 2 has missing and ignored [82], []
+Trial 3 has missing and ignored [82], []
+Trial 4 has missing and ignored [82], []
+Trial 5 has missing and ignored [82], []
+Trial 6 has missing and ignored [82], []
+Trial 7 has missing and ignored [82], []
+Trial 8 has missing and ignored [82], []
+Trial 9 has missing and ignored [82], []
+Trial 10 has missing and ignored [82], []
+Trial 11 has missing and ignored [82], []
+Trial 12 has missing and ignored [82], []
+Trial 13 has missing and ignored [82], []
+Trial 14 has missing and ignored [82], []
+Trial 15 has missing and ignored [82], []
+Trial 16 has missing and ignored [82], []
+Trial 17 has missing and ignored [82], []
+Trial 18 has missing and ignored [82], []
+Trial 19 has missing and ignored [82], []
+Trial 20 has missing and ignored [82], []
+Trial 21 has missing and ignored [82], []
+Trial 22 has missing and ignored [82], []
+Trial 23 has missing and ignored [82], []
+Trial 24 has missing and ignored [82], []
+Trial 25 has missing and ignored [82], []
+Trial 26 has missing and ignored [82], []
+Trial 27 has missing and ignored [82], []
+Trial 28 has missing and ignored [82], []
+Trial 29 has missing and ignored [82], []
+Trial 30 has missing and ignored [82], []
+Trial 31 has missing and ignored [82], []
+Trial 32 has missing and ignored [82], []
+Trial 33 has missing and ignored [82], []
+Mismatch error by shift index: 
+[309 295 197   0]
+Starting match at index 3 with total discrepancy 0.022939[s].
+Trials in event file: 33
+Trials in behavior  : 30  
+Interpreting 3-33 as NextDayRecall
+
+Participant Day, Directory: 0, 2023-03-01_e0017MC_00
+
+ID: e0017MC
+Day: 0
+Phase: Encoding
+Trial 1 code times are not in order!
+Trial 1 has missing and ignored [9, 20, 22, 72, 74, 82, 84, 36, 38, 56, 58], []
+Trial 32 has missing and ignored [82], []
+Trial 33 has missing and ignored [82], []
+Trial 34 has missing and ignored [82], []
+Trial 35 has missing and ignored [82], []
+Trial 36 has missing and ignored [82], []
+Trial 37 has missing and ignored [82], []
+Trial 38 has missing and ignored [82], []
+Trial 39 has missing and ignored [82], []
+Trial 40 has missing and ignored [82], []
+Trial 41 has missing and ignored [82], []
+Trial 42 has missing and ignored [82], []
+Trial 43 has missing and ignored [82], []
+Trial 44 has missing and ignored [82], []
+Trial 45 has missing and ignored [82], []
+Trial 46 has missing and ignored [82], []
+Trial 47 has missing and ignored [82], []
+Trial 48 has missing and ignored [82], []
+Trial 49 has missing and ignored [82], []
+Trial 50 has missing and ignored [82], []
+Trial 51 has missing and ignored [82], []
+Trial 52 has missing and ignored [82], []
+Trial 53 has missing and ignored [82], []
+Trial 54 has missing and ignored [82], []
+Trial 55 has missing and ignored [82], []
+Trial 56 has missing and ignored [82], []
+Trial 57 has missing and ignored [82], []
+Trial 58 has missing and ignored [82], []
+Trial 59 has missing and ignored [82], []
+Trial 60 has missing and ignored [82], []
+Trial 61 has missing and ignored [82], []
+Mismatch error by shift index: 
+[182   0  79  88  92  96  99  91  98 100 101 106 104 109  97 111 117 125
+ 122 126 110 127 132 138 144 153 157 163 166 166 174 151]
+Starting match at index 1 with total discrepancy 0.021569[s].
+Trials in event file: 61
+Trials in behavior  : 30  
+Interpreting trials 1-31 as Encoding
+
+ID: e0017MC
+Day: 0
+Phase: SameDayRecall
+Trial 1 code times are not in order!
+Trial 1 has missing and ignored [9, 20, 22, 72, 74, 82, 84, 36, 38, 56, 58], []
+Trial 32 has missing and ignored [82], []
+Trial 33 has missing and ignored [82], []
+Trial 34 has missing and ignored [82], []
+Trial 35 has missing and ignored [82], []
+Trial 36 has missing and ignored [82], []
+Trial 37 has missing and ignored [82], []
+Trial 38 has missing and ignored [82], []
+Trial 39 has missing and ignored [82], []
+Trial 40 has missing and ignored [82], []
+Trial 41 has missing and ignored [82], []
+Trial 42 has missing and ignored [82], []
+Trial 43 has missing and ignored [82], []
+Trial 44 has missing and ignored [82], []
+Trial 45 has missing and ignored [82], []
+Trial 46 has missing and ignored [82], []
+Trial 47 has missing and ignored [82], []
+Trial 48 has missing and ignored [82], []
+Trial 49 has missing and ignored [82], []
+Trial 50 has missing and ignored [82], []
+Trial 51 has missing and ignored [82], []
+Trial 52 has missing and ignored [82], []
+Trial 53 has missing and ignored [82], []
+Trial 54 has missing and ignored [82], []
+Trial 55 has missing and ignored [82], []
+Trial 56 has missing and ignored [82], []
+Trial 57 has missing and ignored [82], []
+Trial 58 has missing and ignored [82], []
+Trial 59 has missing and ignored [82], []
+Trial 60 has missing and ignored [82], []
+Trial 61 has missing and ignored [82], []
+Mismatch error by shift index: 
+[285 151 181 178 175 169 164 161 156 155 150 143 134 128 130 136 131 125
+ 113 104 109 108 106 101  96  94  97  96  94  84  76   0]
+Starting match at index 31 with total discrepancy 0.020200[s].
+Trials in event file: 61
+Trials in behavior  : 30  
+Interpreting 31-61 as SameDayRecall
+
+Participant Day, Directory: 1, 2023-03-02_e0017MC_01
+
+ID: e0017MC
+Day: 1
+Phase: NextDayRecall
+Trial 1 code times are not in order!
+Trial 1 has missing and ignored [9, 20, 22, 72, 74, 82, 84, 36, 38, 56, 58], []
+Trial 2 has missing and ignored [82], []
+Trial 3 has missing and ignored [82], []
+Trial 4 has missing and ignored [82], []
+Trial 5 has missing and ignored [82], []
+Trial 6 has missing and ignored [82], []
+Trial 7 has missing and ignored [82], []
+Trial 8 has missing and ignored [82], []
+Trial 9 has missing and ignored [82], []
+Trial 10 has missing and ignored [82], []
+Trial 11 has missing and ignored [82], []
+Trial 12 has missing and ignored [82], []
+Trial 13 has missing and ignored [82], []
+Trial 14 has missing and ignored [82], []
+Trial 15 has missing and ignored [82], []
+Trial 16 has missing and ignored [82], []
+Trial 17 has missing and ignored [82], []
+Trial 18 has missing and ignored [82], []
+Trial 19 has missing and ignored [82], []
+Trial 20 has missing and ignored [82], []
+Trial 21 has missing and ignored [82], []
+Trial 22 has missing and ignored [82], []
+Trial 23 has missing and ignored [82], []
+Trial 24 has missing and ignored [82], []
+Trial 25 has missing and ignored [82], []
+Trial 26 has missing and ignored [82], []
+Trial 27 has missing and ignored [82], []
+Trial 28 has missing and ignored [82], []
+Trial 29 has missing and ignored [82], []
+Trial 30 has missing and ignored [82], []
+Trial 31 has missing and ignored [82], []
+Mismatch error by shift index: 
+[71  0]
+Starting match at index 1 with total discrepancy 0.060337[s].
+Trials in event file: 31
+Trials in behavior  : 30  
+Interpreting 1-31 as NextDayRecall
+
+Participant Day, Directory: 0, 2021-10-01_e0013LW_02
+
+ID: e0013LW
+Day: 0
+Phase: Encoding
+Trial 1 has missing and ignored [], [148, 150, 200, 210, 164, 184, 146, 137]
+Trial 2 has missing and ignored [], [200, 202, 210, 212, 166, 184, 186, 146]
+Trial 3 has missing and ignored [], [150, 200, 202, 210, 212, 164, 166, 186, 146, 137]
+Trial 4 has missing and ignored [], [148, 150, 212, 166, 184, 137]
+Trial 5 has missing and ignored [], [148, 150, 200, 202, 210, 212, 164, 184, 146]
+Trial 6 has missing and ignored [], [148, 150, 200, 202, 210, 212, 164, 186, 146, 137]
+Trial 7 has missing and ignored [], [202, 212, 166, 186, 146]
+Trial 8 has missing and ignored [], [148, 150, 200, 202, 210, 212, 164, 166, 186, 146]
+Trial 9 has missing and ignored [], [200, 202, 210, 212, 164, 166, 184, 186, 146, 137]
+Trial 10 has missing and ignored [], [150, 200, 202, 210, 212, 164, 184, 186, 146, 137]
+Trial 11 has missing and ignored [], [150, 200, 202, 212, 166, 184, 186, 146, 137]
+Trial 12 has missing and ignored [], [148, 200, 210, 164, 166, 186, 137]
+Trial 13 has missing and ignored [], [148, 150, 200, 202, 210, 212, 164, 166, 184, 186, 137]
+Trial 14 has missing and ignored [], [202, 212, 166, 184, 186, 146, 137]
+Trial 15 has missing and ignored [], [202, 212, 166, 184, 137]
+Trial 16 has missing and ignored [], [148, 150, 200, 202, 210, 212, 164, 166, 184, 186, 146]
+Trial 17 has missing and ignored [], [148, 150, 200, 210, 212, 164, 166, 184, 186, 146, 137]
+Trial 18 has missing and ignored [], [148, 150, 200, 210, 164, 166, 186, 137]
+Trial 19 has missing and ignored [], [148, 200, 202, 210, 212, 164, 166, 184, 186, 146]
+Trial 20 has missing and ignored [], [148, 202, 212, 166, 184, 186, 146]
+Trial 21 has missing and ignored [], [148, 150, 200, 202, 210, 212, 164, 184, 186, 137]
+Trial 22 has missing and ignored [], [148, 150, 200, 202, 212, 166, 146, 137]
+Trial 23 has missing and ignored [], [200, 202, 210, 212, 164, 184, 146, 137]
+Trial 24 has missing and ignored [], [148, 150, 202, 212, 186, 146, 137]
+Trial 25 has missing and ignored [], [150, 202, 212, 166, 184, 137]
+Trial 26 has missing and ignored [], [202, 212, 184, 186, 137]
+Trial 27 has missing and ignored [], [202, 212, 184, 186, 146, 137]
+Trial 28 has missing and ignored [], [148, 150, 200, 202, 210, 212, 164, 166, 186, 146]
+Trial 29 has missing and ignored [], [148, 150, 202, 212, 164, 184, 186, 146, 137]
+Trial 30 has missing and ignored [], [148, 150, 202, 212, 166, 184, 186]
+Trial 31 has missing and ignored [], [148, 200, 210, 164, 166, 184, 186, 137]
+Trial 32 has missing and ignored [], [148, 150, 200, 202, 210, 212, 164, 166, 184, 186, 146]
+Trial 33 has missing and ignored [], [148, 150, 202, 212, 164, 166, 184, 186, 146]
+Trial 34 has missing and ignored [], [148, 150, 200, 202, 210, 212, 164, 166, 184, 186, 146, 137]
+Trial 35 has missing and ignored [], [150, 200, 202, 210, 212, 164, 166, 184, 146]
+Trial 36 has missing and ignored [], [148, 150, 200, 210, 164, 166, 184, 186, 146, 137]
+Trial 37 has missing and ignored [], [150, 200, 202, 210, 212, 164, 166, 184, 146, 137]
+Trial 38 has missing and ignored [], [148, 202, 212, 166, 186, 146, 137]
+Trial 39 has missing and ignored [], [148, 200, 166, 184, 146]
+Trial 40 has missing and ignored [], [148, 150, 202, 212, 166, 186, 137]
+Trial 41 has missing and ignored [], [148, 150, 200, 202, 210, 212, 164, 186, 137]
+Trial 42 has missing and ignored [], [148, 150, 200, 210, 164, 166, 186]
+Trial 43 has missing and ignored [], [148, 150, 200, 202, 210, 212, 164, 166, 146, 137]
+Trial 44 has missing and ignored [], [148, 150, 200, 210, 164, 166, 146, 137]
+Trial 45 has missing and ignored [], [148, 150, 200, 202, 210, 212, 164, 184, 146]
+Trial 46 has missing and ignored [], [148, 150, 200, 202, 210, 212, 164, 166, 184, 146, 137]
+Trial 47 has missing and ignored [82], [150, 200, 212, 166, 184, 186, 146, 137]
+Trial 48 has missing and ignored [82], [148, 150, 200, 202, 184, 186, 137]
+Trial 49 has missing and ignored [82], [150, 200, 202, 212, 164, 166, 184, 186, 146, 137]
+Trial 50 has missing and ignored [82], [148, 200, 202, 164, 166, 184, 186, 137]
+Trial 51 has missing and ignored [82], [148, 200, 202, 164, 184, 146, 137]
+Trial 52 has missing and ignored [74, 82], [148, 150, 200, 202, 212, 164, 166, 184, 186, 146]
+Trial 53 has missing and ignored [82], [148, 150, 200, 212, 164, 166, 146]
+Trial 54 has missing and ignored [82], [148, 150, 200, 202, 212, 166, 186, 146]
+Trial 55 has missing and ignored [74, 82], [148, 150, 200, 202, 212, 164, 166, 184, 186, 146, 137]
+Trial 56 has missing and ignored [74, 82], [148, 150, 200, 202, 212, 164, 166, 186, 146]
+Trial 57 has missing and ignored [82], [148, 150, 200, 212, 166, 186, 146, 137]
+Trial 58 has missing and ignored [74, 82], [148, 150, 200, 202, 212, 164, 166, 184, 146, 137]
+Trial 59 has missing and ignored [82], [200, 202, 212, 164, 166, 184, 146, 137]
+Trial 60 has missing and ignored [82], [148, 150, 200, 212, 184, 186, 146, 137]
+Trial 61 has missing and ignored [74, 82], [150, 202, 164, 166, 184, 186, 146]
+Trial 62 has missing and ignored [82], [148, 150, 200, 212, 184, 186, 146]
+Trial 63 has missing and ignored [74, 82], [148, 150, 200, 202, 212, 164, 166, 184, 146, 137]
+Trial 64 has missing and ignored [82], [150, 200, 202, 212, 164, 166, 184]
+Trial 65 has missing and ignored [82], [148, 150, 202, 164, 186, 137]
+Trial 66 has missing and ignored [82], [148, 150, 200, 202, 212, 164, 184, 186, 146, 137]
+Trial 67 has missing and ignored [82], [148, 150, 200, 212, 166, 146, 137]
+Trial 68 has missing and ignored [74, 82], [148, 150, 200, 202, 212, 164, 166, 184, 186, 146, 137]
+Trial 69 has missing and ignored [82], [200, 202, 212, 164, 166, 186, 146, 137]
+Trial 70 has missing and ignored [82], [148, 150, 200, 212, 166, 184, 146, 137]
+Trial 71 has missing and ignored [82], [148, 150, 200, 202, 212, 166, 186, 146, 137]
+Trial 72 has missing and ignored [82], [148, 202, 164, 166, 184, 146, 137]
+Trial 73 has missing and ignored [74, 82], [150, 200, 202, 212, 164, 166, 184, 186, 146]
+Trial 74 has missing and ignored [74, 82], [148, 150, 200, 202, 212, 164, 184, 186, 137]
+Trial 75 has missing and ignored [74, 82], [150, 200, 202, 212, 164, 166, 184, 186, 137]
+Trial 76 has missing and ignored [82], [150, 202, 212, 164, 184, 137]
+Trial 77 has missing and ignored [74, 82], [148, 150, 200, 202, 212, 164, 184, 186, 146, 137]
+Trial 78 has missing and ignored [82], [150, 200, 202, 212, 164, 166, 184, 186, 146]
+Trial 79 has missing and ignored [82], [148, 150, 200, 212, 164, 166, 184, 186, 137]
+Trial 80 has missing and ignored [82], [148, 166, 184, 186, 146]
+Trial 81 has missing and ignored [82], [148, 150, 200, 212, 166, 186, 146, 137]
+Trial 82 has missing and ignored [82], [150, 202, 164, 166, 184, 146, 137]
+Trial 83 has missing and ignored [82], [148, 150, 200, 212, 164, 184, 186, 146]
+Trial 84 has missing and ignored [82], [148, 150, 200, 212, 164, 166, 184, 186, 137]
+Trial 85 has missing and ignored [82], [148, 202, 164, 166, 184, 186, 146, 137]
+Trial 86 has missing and ignored [74, 82], [148, 150, 200, 202, 212, 164, 166, 184, 146, 137]
+Trial 87 has missing and ignored [82], [148, 150, 200, 212, 164, 166, 184, 146]
+Trial 88 has missing and ignored [82], [148, 200, 202, 212, 164, 166, 184, 146, 137]
+Trial 89 has missing and ignored [82], [148, 200, 202, 212, 164, 166, 186, 137]
+Trial 90 has missing and ignored [82], [148, 200, 212, 166, 186, 146, 137]
+Trial 91 has missing and ignored [82], [148, 150, 200, 212, 166, 146]
+Mismatch error by shift index: 
+[157   0 166 183 206 210 206 203 210 203 209 224 212 225 220 232 222 204
+ 225 229 231 223 217 201 221 222 223 235 250 230 237 237 234 247 248 254
+ 266 255 259 247 246 268 263 244 277 247 181]
+Starting match at index 1 with total discrepancy 0.058039[s].
+Trials in event file: 91
+Trials in behavior  : 45  
+Interpreting trials 1-46 as Encoding
+
+ID: e0013LW
+Day: 0
+Phase: SameDayRecall
+Trial 1 has missing and ignored [], [148, 150, 200, 210, 164, 184, 146, 137]
+Trial 2 has missing and ignored [], [200, 202, 210, 212, 166, 184, 186, 146]
+Trial 3 has missing and ignored [], [150, 200, 202, 210, 212, 164, 166, 186, 146, 137]
+Trial 4 has missing and ignored [], [148, 150, 212, 166, 184, 137]
+Trial 5 has missing and ignored [], [148, 150, 200, 202, 210, 212, 164, 184, 146]
+Trial 6 has missing and ignored [], [148, 150, 200, 202, 210, 212, 164, 186, 146, 137]
+Trial 7 has missing and ignored [], [202, 212, 166, 186, 146]
+Trial 8 has missing and ignored [], [148, 150, 200, 202, 210, 212, 164, 166, 186, 146]
+Trial 9 has missing and ignored [], [200, 202, 210, 212, 164, 166, 184, 186, 146, 137]
+Trial 10 has missing and ignored [], [150, 200, 202, 210, 212, 164, 184, 186, 146, 137]
+Trial 11 has missing and ignored [], [150, 200, 202, 212, 166, 184, 186, 146, 137]
+Trial 12 has missing and ignored [], [148, 200, 210, 164, 166, 186, 137]
+Trial 13 has missing and ignored [], [148, 150, 200, 202, 210, 212, 164, 166, 184, 186, 137]
+Trial 14 has missing and ignored [], [202, 212, 166, 184, 186, 146, 137]
+Trial 15 has missing and ignored [], [202, 212, 166, 184, 137]
+Trial 16 has missing and ignored [], [148, 150, 200, 202, 210, 212, 164, 166, 184, 186, 146]
+Trial 17 has missing and ignored [], [148, 150, 200, 210, 212, 164, 166, 184, 186, 146, 137]
+Trial 18 has missing and ignored [], [148, 150, 200, 210, 164, 166, 186, 137]
+Trial 19 has missing and ignored [], [148, 200, 202, 210, 212, 164, 166, 184, 186, 146]
+Trial 20 has missing and ignored [], [148, 202, 212, 166, 184, 186, 146]
+Trial 21 has missing and ignored [], [148, 150, 200, 202, 210, 212, 164, 184, 186, 137]
+Trial 22 has missing and ignored [], [148, 150, 200, 202, 212, 166, 146, 137]
+Trial 23 has missing and ignored [], [200, 202, 210, 212, 164, 184, 146, 137]
+Trial 24 has missing and ignored [], [148, 150, 202, 212, 186, 146, 137]
+Trial 25 has missing and ignored [], [150, 202, 212, 166, 184, 137]
+Trial 26 has missing and ignored [], [202, 212, 184, 186, 137]
+Trial 27 has missing and ignored [], [202, 212, 184, 186, 146, 137]
+Trial 28 has missing and ignored [], [148, 150, 200, 202, 210, 212, 164, 166, 186, 146]
+Trial 29 has missing and ignored [], [148, 150, 202, 212, 164, 184, 186, 146, 137]
+Trial 30 has missing and ignored [], [148, 150, 202, 212, 166, 184, 186]
+Trial 31 has missing and ignored [], [148, 200, 210, 164, 166, 184, 186, 137]
+Trial 32 has missing and ignored [], [148, 150, 200, 202, 210, 212, 164, 166, 184, 186, 146]
+Trial 33 has missing and ignored [], [148, 150, 202, 212, 164, 166, 184, 186, 146]
+Trial 34 has missing and ignored [], [148, 150, 200, 202, 210, 212, 164, 166, 184, 186, 146, 137]
+Trial 35 has missing and ignored [], [150, 200, 202, 210, 212, 164, 166, 184, 146]
+Trial 36 has missing and ignored [], [148, 150, 200, 210, 164, 166, 184, 186, 146, 137]
+Trial 37 has missing and ignored [], [150, 200, 202, 210, 212, 164, 166, 184, 146, 137]
+Trial 38 has missing and ignored [], [148, 202, 212, 166, 186, 146, 137]
+Trial 39 has missing and ignored [], [148, 200, 166, 184, 146]
+Trial 40 has missing and ignored [], [148, 150, 202, 212, 166, 186, 137]
+Trial 41 has missing and ignored [], [148, 150, 200, 202, 210, 212, 164, 186, 137]
+Trial 42 has missing and ignored [], [148, 150, 200, 210, 164, 166, 186]
+Trial 43 has missing and ignored [], [148, 150, 200, 202, 210, 212, 164, 166, 146, 137]
+Trial 44 has missing and ignored [], [148, 150, 200, 210, 164, 166, 146, 137]
+Trial 45 has missing and ignored [], [148, 150, 200, 202, 210, 212, 164, 184, 146]
+Trial 46 has missing and ignored [], [148, 150, 200, 202, 210, 212, 164, 166, 184, 146, 137]
+Trial 47 has missing and ignored [82], [150, 200, 212, 166, 184, 186, 146, 137]
+Trial 48 has missing and ignored [82], [148, 150, 200, 202, 184, 186, 137]
+Trial 49 has missing and ignored [82], [150, 200, 202, 212, 164, 166, 184, 186, 146, 137]
+Trial 50 has missing and ignored [82], [148, 200, 202, 164, 166, 184, 186, 137]
+Trial 51 has missing and ignored [82], [148, 200, 202, 164, 184, 146, 137]
+Trial 52 has missing and ignored [74, 82], [148, 150, 200, 202, 212, 164, 166, 184, 186, 146]
+Trial 53 has missing and ignored [82], [148, 150, 200, 212, 164, 166, 146]
+Trial 54 has missing and ignored [82], [148, 150, 200, 202, 212, 166, 186, 146]
+Trial 55 has missing and ignored [74, 82], [148, 150, 200, 202, 212, 164, 166, 184, 186, 146, 137]
+Trial 56 has missing and ignored [74, 82], [148, 150, 200, 202, 212, 164, 166, 186, 146]
+Trial 57 has missing and ignored [82], [148, 150, 200, 212, 166, 186, 146, 137]
+Trial 58 has missing and ignored [74, 82], [148, 150, 200, 202, 212, 164, 166, 184, 146, 137]
+Trial 59 has missing and ignored [82], [200, 202, 212, 164, 166, 184, 146, 137]
+Trial 60 has missing and ignored [82], [148, 150, 200, 212, 184, 186, 146, 137]
+Trial 61 has missing and ignored [74, 82], [150, 202, 164, 166, 184, 186, 146]
+Trial 62 has missing and ignored [82], [148, 150, 200, 212, 184, 186, 146]
+Trial 63 has missing and ignored [74, 82], [148, 150, 200, 202, 212, 164, 166, 184, 146, 137]
+Trial 64 has missing and ignored [82], [150, 200, 202, 212, 164, 166, 184]
+Trial 65 has missing and ignored [82], [148, 150, 202, 164, 186, 137]
+Trial 66 has missing and ignored [82], [148, 150, 200, 202, 212, 164, 184, 186, 146, 137]
+Trial 67 has missing and ignored [82], [148, 150, 200, 212, 166, 146, 137]
+Trial 68 has missing and ignored [74, 82], [148, 150, 200, 202, 212, 164, 166, 184, 186, 146, 137]
+Trial 69 has missing and ignored [82], [200, 202, 212, 164, 166, 186, 146, 137]
+Trial 70 has missing and ignored [82], [148, 150, 200, 212, 166, 184, 146, 137]
+Trial 71 has missing and ignored [82], [148, 150, 200, 202, 212, 166, 186, 146, 137]
+Trial 72 has missing and ignored [82], [148, 202, 164, 166, 184, 146, 137]
+Trial 73 has missing and ignored [74, 82], [150, 200, 202, 212, 164, 166, 184, 186, 146]
+Trial 74 has missing and ignored [74, 82], [148, 150, 200, 202, 212, 164, 184, 186, 137]
+Trial 75 has missing and ignored [74, 82], [150, 200, 202, 212, 164, 166, 184, 186, 137]
+Trial 76 has missing and ignored [82], [150, 202, 212, 164, 184, 137]
+Trial 77 has missing and ignored [74, 82], [148, 150, 200, 202, 212, 164, 184, 186, 146, 137]
+Trial 78 has missing and ignored [82], [150, 200, 202, 212, 164, 166, 184, 186, 146]
+Trial 79 has missing and ignored [82], [148, 150, 200, 212, 164, 166, 184, 186, 137]
+Trial 80 has missing and ignored [82], [148, 166, 184, 186, 146]
+Trial 81 has missing and ignored [82], [148, 150, 200, 212, 166, 186, 146, 137]
+Trial 82 has missing and ignored [82], [150, 202, 164, 166, 184, 146, 137]
+Trial 83 has missing and ignored [82], [148, 150, 200, 212, 164, 184, 186, 146]
+Trial 84 has missing and ignored [82], [148, 150, 200, 212, 164, 166, 184, 186, 137]
+Trial 85 has missing and ignored [82], [148, 202, 164, 166, 184, 186, 146, 137]
+Trial 86 has missing and ignored [74, 82], [148, 150, 200, 202, 212, 164, 166, 184, 146, 137]
+Trial 87 has missing and ignored [82], [148, 150, 200, 212, 164, 166, 184, 146]
+Trial 88 has missing and ignored [82], [148, 200, 202, 212, 164, 166, 184, 146, 137]
+Trial 89 has missing and ignored [82], [148, 200, 202, 212, 164, 166, 186, 137]
+Trial 90 has missing and ignored [82], [148, 200, 212, 166, 186, 146, 137]
+Trial 91 has missing and ignored [82], [148, 150, 200, 212, 166, 146]
+Mismatch error by shift index: 
+[228 181 265 290 276 295 308 292 281 300 295 308 300 298 311 309 307 315
+ 302 316 313 305 329 327 302 303 283 289 285 280 288 320 314 292 294 272
+ 277 260 281 280 290 298 287 266 230 244   0]
+Starting match at index 46 with total discrepancy 0.069079[s].
+Trials in event file: 91
+Trials in behavior  : 45  
+Interpreting 46-91 as SameDayRecall
+
+Participant Day, Directory: 1, 2021-10-02_e0013LW_03
+
+ID: e0013LW
+Day: 1
+Phase: NextDayRecall
+Trial 1 code times are not in order!
+Trial 1 has missing and ignored [9, 20, 22, 72, 74, 82, 84, 36, 38, 56, 58], [137]
+Trial 2 has missing and ignored [82], [200, 202, 164, 166, 184, 186, 146, 137]
+Trial 3 has missing and ignored [82], [148, 150, 200, 212, 166, 184, 186, 146]
+Trial 4 has missing and ignored [82], [148, 150, 200, 202, 212, 166, 186, 146]
+Trial 5 has missing and ignored [82], [148, 150, 200, 202, 212, 166, 184, 186, 146, 137]
+Trial 6 has missing and ignored [74, 82], [148, 150, 200, 202, 212, 166, 146]
+Trial 7 has missing and ignored [82], [148, 150, 200, 202, 212, 166, 146, 137]
+Trial 8 has missing and ignored [74, 82], [148, 202, 212, 164, 166, 184, 186, 146, 137]
+Trial 9 has missing and ignored [82], [148, 150, 212, 184, 186, 146, 137]
+Trial 10 has missing and ignored [82], [148, 150, 200, 202, 212, 164, 166, 186, 146]
+Trial 11 has missing and ignored [74, 82], [200, 202, 212, 164, 184, 186, 146, 137]
+Trial 12 has missing and ignored [74, 82], [150, 202, 212, 164, 166, 146]
+Trial 13 has missing and ignored [82], [148, 150, 200, 212, 166, 184, 186, 146, 137]
+Trial 14 has missing and ignored [82], [148, 150, 200, 202, 164, 166, 184, 186, 146, 137]
+Trial 15 has missing and ignored [82], [148, 150, 200, 202, 212, 146]
+Trial 16 has missing and ignored [82], [148, 150, 200, 212, 164, 166, 186, 146, 137]
+Trial 17 has missing and ignored [82], [148, 150, 200, 202, 164, 166, 184, 186, 146, 137]
+Trial 18 has missing and ignored [74, 82], [200, 202, 212, 164, 166, 186, 146]
+Trial 19 has missing and ignored [82], [148, 150, 200, 202, 164, 166, 184, 186, 146, 137]
+Trial 20 has missing and ignored [82], [148, 150, 200, 212, 184]
+Trial 21 has missing and ignored [74, 82], [148, 150, 200, 202, 212, 164, 166, 186, 146, 137]
+Trial 22 has missing and ignored [74, 82], [148, 150, 200, 202, 212, 164, 166, 186, 137]
+Trial 23 has missing and ignored [82], [148, 150, 200, 202, 166, 146, 137]
+Trial 24 has missing and ignored [82], [150, 200, 202, 164, 166, 184, 186, 137]
+Trial 25 has missing and ignored [82], [148, 150, 200, 166, 184, 186, 146, 137]
+Trial 26 has missing and ignored [82], [148, 150, 200, 202, 164, 184, 186, 146, 137]
+Trial 27 has missing and ignored [82], [150, 200, 212, 166, 186, 146, 137]
+Trial 28 has missing and ignored [82], [148, 150, 200, 212, 184, 186, 137]
+Trial 29 has missing and ignored [82], [148, 150, 200, 202, 164, 166, 184, 186, 146, 137]
+Trial 30 has missing and ignored [82], [148, 150, 200, 202, 164, 166, 184, 146, 137]
+Trial 31 has missing and ignored [82], [150, 200, 212, 184, 186]
+Trial 32 has missing and ignored [74, 82], [150, 200, 202, 212, 164, 186, 146]
+Trial 33 has missing and ignored [82], [148, 150, 200, 212, 166, 184, 186, 146, 137]
+Trial 34 has missing and ignored [82], [150, 200, 212, 166, 146, 137]
+Trial 35 has missing and ignored [82], [148, 150, 200, 202, 164, 166, 184, 137]
+Trial 36 has missing and ignored [82], [148, 212, 166, 184, 186, 146]
+Trial 37 has missing and ignored [82], [150, 200, 202, 212, 164, 166, 184, 146, 137]
+Trial 38 has missing and ignored [82], [148, 150, 200, 166, 184, 186, 146, 137]
+Trial 39 has missing and ignored [74, 82], [148, 150, 200, 202, 212, 164, 166, 186, 146, 137]
+Trial 40 has missing and ignored [82], [150, 200, 212, 184, 137]
+Trial 41 has missing and ignored [82], [148, 150, 200, 202, 164, 184, 186, 146]
+Trial 42 has missing and ignored [82], [148, 150, 200, 202, 164, 166, 186, 137]
+Trial 43 has missing and ignored [82], [212, 166, 184, 186, 146]
+Trial 44 has missing and ignored [82], [148, 150, 200, 202, 212, 166, 186, 146, 137]
+Trial 45 has missing and ignored [82], [148, 150, 212, 184, 137]
+Trial 46 has missing and ignored [82], [148, 150, 200, 202, 164, 184, 186, 146]
+Mismatch error by shift index: 
+[532   0]
+Starting match at index 1 with total discrepancy 0.067273[s].
+Trials in event file: 46
+Trials in behavior  : 45  
+Interpreting 1-46 as NextDayRecall
+
+Participant Day, Directory: 0, 2022-11-10_e0015TJ_01
+
+ID: e0015TJ
+Day: 0
+Phase: Encoding
+Trial 31 has missing and ignored [82], []
+Trial 32 has missing and ignored [82], []
+Trial 33 has missing and ignored [82], []
+Trial 34 has missing and ignored [82], []
+Trial 35 has missing and ignored [82], []
+Trial 36 has missing and ignored [82], []
+Trial 37 has missing and ignored [82], []
+Trial 38 has missing and ignored [82], []
+Trial 39 has missing and ignored [82], []
+Trial 40 has missing and ignored [82], []
+Trial 41 has missing and ignored [82], []
+Trial 42 has missing and ignored [82], []
+Trial 43 has missing and ignored [82], []
+Trial 44 has missing and ignored [82], []
+Trial 45 has missing and ignored [82], []
+Trial 46 has missing and ignored [82], []
+Trial 47 has missing and ignored [82], []
+Trial 48 has missing and ignored [82], []
+Trial 49 has missing and ignored [82], []
+Trial 50 has missing and ignored [82], []
+Trial 51 has missing and ignored [82], []
+Trial 52 has missing and ignored [82], []
+Trial 53 has missing and ignored [82], []
+Trial 54 has missing and ignored [82], []
+Trial 55 has missing and ignored [82], []
+Trial 56 has missing and ignored [82], []
+Trial 57 has missing and ignored [82], []
+Trial 58 has missing and ignored [82], []
+Trial 59 has missing and ignored [82], []
+Trial 60 has missing and ignored [82], []
+Mismatch error by shift index: 
+[  0  97 104 105 107 114 120 122 126 132 140 142 149 155 159 165 171 175
+ 179 185 185 192 197 198 204 208 212 216 221 215 153]
+Starting match at index 0 with total discrepancy 0.123050[s].
+Trials in event file: 60
+Trials in behavior  : 30  
+Interpreting trials 0-30 as Encoding
+
+ID: e0015TJ
+Day: 0
+Phase: SameDayRecall
+Trial 31 has missing and ignored [82], []
+Trial 32 has missing and ignored [82], []
+Trial 33 has missing and ignored [82], []
+Trial 34 has missing and ignored [82], []
+Trial 35 has missing and ignored [82], []
+Trial 36 has missing and ignored [82], []
+Trial 37 has missing and ignored [82], []
+Trial 38 has missing and ignored [82], []
+Trial 39 has missing and ignored [82], []
+Trial 40 has missing and ignored [82], []
+Trial 41 has missing and ignored [82], []
+Trial 42 has missing and ignored [82], []
+Trial 43 has missing and ignored [82], []
+Trial 44 has missing and ignored [82], []
+Trial 45 has missing and ignored [82], []
+Trial 46 has missing and ignored [82], []
+Trial 47 has missing and ignored [82], []
+Trial 48 has missing and ignored [82], []
+Trial 49 has missing and ignored [82], []
+Trial 50 has missing and ignored [82], []
+Trial 51 has missing and ignored [82], []
+Trial 52 has missing and ignored [82], []
+Trial 53 has missing and ignored [82], []
+Trial 54 has missing and ignored [82], []
+Trial 55 has missing and ignored [82], []
+Trial 56 has missing and ignored [82], []
+Trial 57 has missing and ignored [82], []
+Trial 58 has missing and ignored [82], []
+Trial 59 has missing and ignored [82], []
+Trial 60 has missing and ignored [82], []
+Mismatch error by shift index: 
+[152 226 221 217 212 207 205 201 195 193 189 185 183 181 177 173 170 162
+ 159 158 157 146 137 139 133 126 124 116 119 114   0]
+Starting match at index 30 with total discrepancy 0.042921[s].
+Trials in event file: 60
+Trials in behavior  : 30  
+Interpreting 30-60 as SameDayRecall
+
+Participant Day, Directory: 1, 2022-11-11_e0015TJ_02
+
+ID: e0015TJ
+Day: 1
+Phase: NextDayRecall
+Trial 1 has missing and ignored [82], []
+Trial 2 has missing and ignored [82], []
+Trial 3 has missing and ignored [82], []
+Trial 4 has missing and ignored [82], []
+Trial 5 has missing and ignored [82], []
+Trial 6 has missing and ignored [82], []
+Trial 7 has missing and ignored [82], []
+Trial 8 has missing and ignored [82], []
+Trial 9 has missing and ignored [82], []
+Trial 10 has missing and ignored [82], []
+Trial 11 has missing and ignored [82], []
+Trial 12 has missing and ignored [82], []
+Trial 13 has missing and ignored [82], []
+Trial 14 has missing and ignored [82], []
+Trial 15 has missing and ignored [82], []
+Trial 16 has missing and ignored [82], []
+Trial 17 has missing and ignored [82], []
+Trial 18 has missing and ignored [82], []
+Trial 19 has missing and ignored [82], []
+Trial 20 has missing and ignored [82], []
+Trial 21 has missing and ignored [82], []
+Trial 22 has missing and ignored [82], []
+Trial 23 has missing and ignored [82], []
+Trial 24 has missing and ignored [82], []
+Trial 25 has missing and ignored [82], []
+Trial 26 has missing and ignored [82], []
+Trial 27 has missing and ignored [82], []
+Trial 28 has missing and ignored [82], []
+Trial 29 has missing and ignored [82], []
+Trial 30 has missing and ignored [82], []
+Mismatch error by shift index: 
+[0]
+Starting match at index 0 with total discrepancy 0.069136[s].
+Trials in event file: 30
+Trials in behavior  : 30  

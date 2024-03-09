@@ -1,28 +1,28 @@
 '''
 This file contains the main preprocessing functions.
 '''
-# Shared imports
+
 import os
 import mne
 import numpy  as np
 import pandas as pd
-
-from src.preproc.utils import save_raw_if, save_plt_if
+import ipdb
+import dill
+from joblib import Parallel, delayed
+from src.preproc.utils import *
+from src.shared.utils  import *
 
 # This function does several things which should be disaggregated:
 # - read behavioral data and write an events.csv file
 # - write a session_info.csv file tracking the file structure
 
-def make_session_info(params):
+def make_session_info(params, paths):
     '''
     This function writes a session_info.csv file containing session metadata, which is used in preprocessing.
 
     It is adapted to some extent from:
     https://github.com/Brainstorm-Program/brainstorm_challenge_2024/blob/main/scripts/brainstorm_reorganize_data.py
     '''
-
-    from src.preproc.utils import read_bhv, find_trials, match_trials
-
     # Data frame for session info
     df = pd.DataFrame(columns = ['participant_id', 'day_id', 'subdir_orig', 'date', 'session'])
     matched_trials_all = []
@@ -39,10 +39,11 @@ def make_session_info(params):
         '2021-10-02_e0013LW_03',
         '2022-11-10_e0015TJ_01',
         '2022-11-11_e0015TJ_02',
-        '2023-02-07_e0016YR_02']
+        #'2023-02-07_e0016YR_02'
+        ]
 
     # Corrosponding days
-    subj_days = [0,1, 0,1, 0,1, 0,1, 0,1, 0]
+    subj_days = [0,1, 0,1, 0,1, 0,1, 0,1]#, 0]
 
     # For each participant session, collect session info into frame
     for day, dir in zip(subj_days, subj_dirs):
@@ -52,7 +53,7 @@ def make_session_info(params):
 
         # Get subject ID and all files in directory
         subj_id = dir.split('_')[-2]
-        subj_fnames = os.listdir(f"{params.path_read}/{dir}")
+        subj_fnames = os.listdir(f"{paths.unproc_data}/{dir}")
         
         # Get electrode list and data list
         subj_electrodes    = []
@@ -77,8 +78,8 @@ def make_session_info(params):
         for phase in phases:
             
             # Determine behavior and event filenames
-            subj_behav_file = f"{params.path_read}/{dir}/{dir[:-2]}{phase}.mat"
-            subj_event_file = f"{params.path_read}/{dir}/{dir[:-2]}Events.pbz2"
+            subj_behav_file = f"{paths.unproc_data}/{dir}/{dir[:-2]}{phase}.mat"
+            subj_event_file = f"{paths.unproc_data}/{dir}/{dir[:-2]}Events.pbz2"
             
             # Create a label to better signify the current phase
             if day == 0 and phase == 'A':
@@ -93,14 +94,42 @@ def make_session_info(params):
             print(f"Day: {day}")
             print(f"Phase: {phase_dict}")
 
-            # Load and navigate the data using Bryan Zheng's functions
-            bhv = read_bhv(subj_behav_file)
-            fs, codes, trials = find_trials(subj_event_file)
-            matched_trials = match_trials(bhv, codes, trials, fs)
-        
+            # Copy of behavior .mat file, dictionary format, trial num keys
+            bhv = read_bhv_matfile(subj_behav_file)
+
+            # Summarize the timing information from these
+            time_info = summarize_behavior_timing(bhv)
+
+            # Get all the trial codes and sample times from the event files
+            trials = get_trials_from_event_file(subj_event_file)
+
+            # Fuck everything up. Oh wait, no, don't.
+            # matched_trials = match_trials(bhv, codes, trials, fs, verbose=True)
+
+            # Get the index-shift into neural trials to use
+            use_shift = check_behavior_against_neural_timing(time_info, trials)
+            ind_end   = use_shift + len(bhv)
+
+            # Print basic information so we know what we're getting...
+            print(f'Trials in event file: {len(trials)}')
+            print(f'Trials in behavior  : {len(bhv)}  ')
+
+            # Subset trials and inform
+            if day == 0 and phase == 'A':
+                matched_trials = trials[use_shift:ind_end]
+                print(f'Interpreting trials {use_shift}-{ind_end} as Encoding')
+
+            elif day == 0 and phase == 'B':
+                matched_trials = trials[use_shift:ind_end]
+                print(f'Interpreting {use_shift}-{ind_end} as SameDayRecall')
+
+            elif day == 1 and phase == 'A':
+                matched_trials = trials[use_shift:ind_end]
+                print(f'Interpreting {use_shift}-{ind_end} as NextDayRecall')
+
             ## Save info:
             matched_trials_all.append(matched_trials)
-            df.loc[len(df.index)] = [subj_id , dir.split('_')[-1], dir, dir.split('_')[0], phase_dict]  
+            df.loc[len(df.index)] = [subj_id , dir.split('_')[-1], dir, dir.split('_')[0], phase_dict]
 
 
     # Create and save event files, save locations in subdir_data column of session_info.csv frame
@@ -115,54 +144,45 @@ def make_session_info(params):
             subdir = ''
 
         # Create subject and session paths
-        path_subj.append(os.path.join(params.path_save, row["participant_id"]))
-        path_sess.append(os.path.join(params.path_save, subdir))
+        path_subj.append(os.path.join(paths.save_preproc, row["participant_id"]))
+        path_sess.append(os.path.join(paths.save_preproc, subdir))
         
         # Create directory
         os.makedirs(path_sess[-1], exist_ok = True)
         
-        # Create events list & convert to dataframe
-        events = np.concatenate([trials for trials in matched_trials.values()])
-        events = pd.DataFrame(events).rename(columns={0: 'code', 1: 'time'})
-
-        # Event-file name
-        event_file = os.path.join(path_sess[-1], row["participant_id"] + "_" + row["session"] + "_events.csv")
-
-        # Save event file
-        events.to_csv(event_file, index = False)
+        # Create events list, filename, and save. Each event is (code, sample number).
+        events     = np.concatenate(matched_trials)
+        event_file = os.path.join(path_sess[-1], row["participant_id"] + "_" + row["session"] + "_events.pt")
+        dill_save(events, event_file)
 
     # Insert subdir location and save session info
     df["path_sess"] = path_sess
     df['path_subj'] = path_subj
-    df.to_csv(os.path.join(params.path_save, "session_info.csv"), index = False)
+    df.to_csv(os.path.join(paths.save_preproc, "session_info.csv"), index = False)
 
     # Give the session info back
     return df
 
 
-def make_raws(session_info, params):
+def make_raws(session_info, params, paths):
     '''
     Functions:
     - Reads in all SEEG timeseries data and saves a file per subject per session.
     - Keeps channel info in register with SEEG data and saves as corresponding csv.
     '''
 
-    # We don't need these imports around generally
-    from joblib import Parallel, delayed
-    from src.preproc.utils import construct_raw
-
     # Parallelization wrapper
-    def parallel(row, params):
+    def parallel(row, params, paths):
         """ read raw timeseries for a single session. also reads metadata about channels, in chinfo. """
         
         # 
-        raw, chinfo = construct_raw(row, params)
+        raw, chinfo = construct_raw(row, params, paths)
         
         # Filename for this session
         fname_base = row["participant_id"] + "_" + row["session"]
 
         # Save .fif file
-        raw.save(os.path.join(row['path_sess'], fname_base + "_raw.fif"), overwrite = True)
+        raw.save(os.path.join(row['path_sess'], fname_base + "_raw.fif"), overwrite = True, verbose='Error')
         
         # Save channel info
         chinfo.to_csv(os.path.join(row['path_subj'], row["participant_id"] + "_chinfo.csv"), index = False)
@@ -170,9 +190,64 @@ def make_raws(session_info, params):
         return raw, chinfo
 
     # Parallelize 
-    raws = Parallel(n_jobs = params.n_jobs)(delayed(parallel)(row, params) for i, row in session_info.iterrows())
+    raws = Parallel(n_jobs = params.n_jobs)(delayed(parallel)(row, params, paths) for i, row in session_info.iterrows())
+    
+    # Local alternate
+    #for i, row in session_info.iterrows():
+    #    raws = parallel(row, params, paths)
 
     return raws
+
+
+def construct_raw(session_row, params, paths):
+    """ Constructs raw data object for a given day. Also loads metadata about channels, in chinfo. 
+    NB: only the intersection of channel names in chinfo["channel"] and names of the SEEG day subdirectory is kept.
+    I.e., we keep only channels for which we have both data and their location (assuming no typos in names).
+    """
+    subj = session_row['participant_id']
+    sess = session_row['session']
+    dir  = session_row['subdir_orig']
+
+    # Read channel information
+    chinfo = read_subj_channel_info(subj, paths)
+
+    # Read SEEG data in intersection of contacts data files
+    data, contacts = load_session_seeg(dir = paths.unproc_data + '/' + dir, contacts = chinfo["contact"])
+
+    # Keep only contacts from data in chinfo
+    chinfo = chinfo[chinfo["contact"].isin(contacts)]
+    
+    # Read events file (from processed data path) and format for MNE
+    events = dill_read(os.path.join(session_row['path_sess'], subj + "_" + sess + "_events.pt"))
+    events = np.stack([events[:,1], np.zeros_like(events[:,0]), events[:,0]]).T
+    
+    # Debugging checkpoint 1
+    #dill_save(data,'./data/chkpts/data_chkpt_cnstrct_1.pt')
+
+    # Rescale signal
+    signals = np.stack([d["signal"] for d in data]) / params.scale # ideally, in V
+
+    # Create MNE metadata
+    n_channels = len(data)
+    #ch_names  = chinfo["contact"].tolist()
+    ch_names   = [d['label'] for d in data ] # this preserves order properly!!!
+    ch_types   = ["seeg"] * n_channels
+
+    # Create MNE structure and add line frequency to it
+    info = mne.create_info(ch_names, ch_types = ch_types, sfreq = params.sample_freq_native)
+    info["line_freq"] = params.line_freq
+
+    # Debugging checkpoint 2
+    # dill_save(signals, './data/chkpts/data_chkpt_cnstrct_2.pt')
+
+    ## Construct MNE "raw" type (ensure signals and stim data order match ch_types/names)
+    raw = mne.io.RawArray(signals, info)
+    
+    ## Add events as annotations:
+    annots = mne.annotations_from_events(events, params.sample_freq_native, event_desc = params.trigger_to_desc_dict)
+    raw.set_annotations(annots)
+    
+    return raw, chinfo
 
 
 def inspect_sessions(session_info, params):
@@ -223,7 +298,7 @@ def inspect_sessions(session_info, params):
         raw.save(os.path.join(row['path_sess'], fname_base + "_raw.fif"), overwrite = True)
 
 
-def preproc_sessions(session_info, params):
+def preproc_sessions(session_info, params, paths):
     '''
     Functions:
     - Attenuates power-line noise, re-references, bandpass filters, detects outliers
@@ -231,7 +306,6 @@ def preproc_sessions(session_info, params):
     - Saves data in .fif and .set formats (MNE, EEGLab)
     - If line-noise persists (see figs), you can increase num dims in the session_info.csv file.
     '''
-    from src.preproc.utils import remove_line_noise, rereference, annot_bad_times
 
     for i, row in session_info.iterrows():
         print("Processing subject " + row["participant_id"] + ", session " + row["session"] + "...")
@@ -241,7 +315,7 @@ def preproc_sessions(session_info, params):
         fname = row["participant_id"] + "_" + row["session"]
 
         # Read raw file
-        raw = mne.io.read_raw_fif(os.path.join(row['path_sess'], fname + "_raw.fif"), preload = True)
+        raw = mne.io.read_raw_fif(os.path.join(row['path_sess'], fname + "_raw.fif"), preload = True, verbose='Error')
         
         # Read channel info file
         chinfo = pd.read_csv(os.path.join(row['path_subj'], row["participant_id"] + "_chinfo.csv"))
@@ -255,15 +329,42 @@ def preproc_sessions(session_info, params):
             fname += '_no60hz'
             if params.save_step_rmline:
                 save_raw_if(raw, params, row['path_sess'], fname)
-                save_plt_if(raw, params, fname)
+                save_plt_if(raw, params, fname, paths)
+
+        # # Bipolar, for reference
+        # if params.do_rerefing:
+        #     copy = raw.copy()
+        #     copy, chinfo_copy = rereference(copy, chinfo, row['path_sess'], method = 'bipolar')
+        #     if params.save_step_rerefing:
+        #         save_raw_if(copy, params, row['path_sess'], fname + '_bip')
+        #         save_plt_if(copy, params, fname, paths)
+
+        # # Unipolar, for reference
+        # if params.do_rerefing:
+        #     copy = raw.copy()
+        #     copy, chinfo_copy = rereference(copy, chinfo, row['path_sess'], method = 'unipolar')
+        #     if params.save_step_rerefing:
+        #         save_raw_if(copy, params, row['path_sess'], fname + '_uni')
+        #         save_plt_if(copy, params, fname, paths)
+
+        #         # Conserve memroy
+        #         del copy
+        
+        # # Laplacian w/ self-ref, for reference
+        # if params.do_rerefing:
+        #     copy = raw.copy()
+        #     copy, chinfo_copy = rereference(copy, chinfo, row['path_sess'], method = 'laplacian', selfref_first=True)
+        #     if params.save_step_rerefing:
+        #         save_raw_if(copy, params, row['path_sess'], fname + '_srf')
+        #         save_plt_if(copy, params, fname, paths)
 
         # Re-referencing
         if params.do_rerefing:
-            raw, chinfo = rereference(raw, chinfo, method = params.reref_method)
+            raw, chinfo = rereference(raw, chinfo, row['path_sess'], method = params.reref_method)
             fname += '_ref'
             if params.save_step_rerefing:
                 save_raw_if(raw, params, row['path_sess'], fname)
-                save_plt_if(raw, params, fname)
+                save_plt_if(raw, params, fname, paths)
 
         # Bandpass filter data
         if params.do_bandpass:
@@ -271,7 +372,7 @@ def preproc_sessions(session_info, params):
             fname += '_bp'
             if params.save_step_bandpass:
                 save_raw_if(raw, params, row['path_sess'], fname)
-                save_plt_if(raw, params, fname)
+                save_plt_if(raw, params, fname, paths)
 
         ## Annotate bad time samples
         if params.do_rmouts:
@@ -295,7 +396,7 @@ def preproc_sessions(session_info, params):
             fname += '_ds'
             # Last step if applied, so no save flag
             save_raw_if(raw, params, row['path_sess'], fname)
-            save_plt_if(raw, params, fname)
+            save_plt_if(raw, params, fname, paths)
 
 
 def clip_sessions(session_info, params):
@@ -350,7 +451,68 @@ def clip_sessions(session_info, params):
 
 
 
-def epoch_sessions(session_info, params):
+def time_frequency_decompose(session_info, params, paths):
+    '''
+    This function reads preprocessed raw timeseries data and implements a morelet wavelet transform, 
+    then saves the time-frequency power timeseries.
+    '''
+
+    from src.preproc.utils import time_frequency_decomp, tfarray_to_raw, bin_wavelets
+    
+    for i, row in session_info.iterrows():
+
+        path_sess = os.path.join(paths.processed_raws, row["participant_id"], row["session"])
+
+        # Say what subject & file we're on
+        print("Processing subject " + row["participant_id"] + ", session " + row["session"])
+        print("File " + str(i + 1) + " of " + str(len(session_info)))
+
+        # Read raw file (and drop bads)
+        
+        fname_base = os.path.join(path_sess, row["participant_id"] + "_" + row["session"] + params.suffix_preproc)
+        raw = mne.io.read_raw_fif(fname_base + "_raw.fif", preload = True)
+        raw.drop_channels(raw.info["bads"])
+        chinfo = pd.read_csv(os.path.join(row['path_subj'], row["participant_id"] + "_chinfo.csv"))
+        
+        ## prefix for output filename:
+        #fname_out = row["participant_id"] + "_" + row["session"]
+        
+        ## subset channels
+        is_greymatter = chinfo["White Matter"] == 0
+        
+        for region_i, region in enumerate(params.tf_regions):
+
+            is_region = chinfo["Level 3: gyrus/sulcus/cortex/nucleus"].str.contains(region)
+            contacts = chinfo[is_region & is_greymatter]["contact"].tolist()
+            contacts = [c for c in contacts if c in raw.ch_names] ## only keep contacts that are in the raw file
+            raw_region = raw.copy().pick(contacts)
+
+            ## apply time-frequency decomp
+
+            tf_array = time_frequency_decomp(raw_region, params)
+            tf_binned = bin_wavelets(tf_array, params)  ## aggregate into bands
+            
+            ## put into raw objects
+            
+            raw_tf = tfarray_to_raw(tf_array,
+                params.tf_freqs, raw_region.ch_names, "seeg", 
+                raw_region.info["sfreq"], raw_region.annotations)
+
+            raw_binned = tfarray_to_raw(tf_binned,
+                params.tf_bands.keys(), raw_region.ch_names, "seeg", 
+                raw_region.info["sfreq"], raw_region.annotations)
+
+            ## save
+
+            fname_out_tf = fname_base + "_morletfull_" + params.tf_regions_fnames[region_i]
+            fname_out_binned = fname_base + "_morletbins_" + params.tf_regions_fnames[region_i]
+            if params.save_fif:
+                save_raw_if(raw_tf, params, path_sess, fname_out_tf)
+                save_raw_if(raw_binned, params, path_sess, fname_out_binned)
+
+
+
+def epoch_sessions(session_info, params, paths):
     '''
     This script reads preprocessed raw timeseries data and epochs it into trials.
     - Epoch metadata (incl triggers, events), saved in a csv file with one row per trial
@@ -364,7 +526,7 @@ def epoch_sessions(session_info, params):
         raise ValueError("Don't generate downsampled epochs from already-downsampled raws.")
     
     # Load behavioral data
-    beh_data = pd.read_csv(os.path.join(params.path_save, "behavioral_data.csv"))
+    beh_data = pd.read_csv(os.path.join(paths.save_preproc, "behavioral_data.csv"))
 
     log = []
     for i, row in session_info.iterrows():
@@ -374,7 +536,7 @@ def epoch_sessions(session_info, params):
         print("File " + str(i + 1) + " of " + str(len(session_info)))
 
         # Create an epoch files directory
-        #dir_subj_epochs = os.path.join(params.path_save, "epochs", row["participant_id"], row["session"])
+        #dir_subj_epochs = os.path.join(ppaths.save_preproc, "epochs", row["participant_id"], row["session"])
         #os.makedirs(dir_subj_epochs, exist_ok = True)
         
         # Read raw file 
@@ -387,6 +549,11 @@ def epoch_sessions(session_info, params):
         
         # For each epoch, select data and save as a file
         for epoch_type in params.epoch_info.keys():
+
+            is_bad_combo = (epoch_type == "clipcue") & (row["session"] != "Encoding")
+            if is_bad_combo:
+                ## clipcue only present during encoding session, therefore skip.
+                continue
             
             ## create metadata df from events/trigs:
             metadata, events_out, event_id_out = mne.epochs.make_metadata(
@@ -411,6 +578,7 @@ def epoch_sessions(session_info, params):
             else:
                 log.append("ok")
             
+            beh_data_sub = beh_data_sub.sort_values(by = "trial_num")
             metadata["trial_num"] = beh_data_sub["trial_num"].values  ## NB: ASSUMES BOTH BEH AND EPOCHS ARE CHRONOLOG.
             
             ## epoch and save
@@ -418,12 +586,12 @@ def epoch_sessions(session_info, params):
             # Anti-aliasing filter and decimation factor
             if params.do_downsample_epochs:
                 # https://mne.tools/stable/auto_tutorials/preprocessing/30_filtering_resampling.html#best-practices
-                raw.filter(0, params.sample_freq_new / 3)
+                raw.filter(0, params.sample_freq_new / 3, n_jobs = params.tf_n_jobs)
                 decim = int(params.sample_freq_native / params.sample_freq_new)
             else:
                 decim = 1  ## no downsampling
                 
-            for reject_bad_epos in [True, False]:                
+            for reject_bad_epos in [True, False]:
                 epochs = mne.Epochs(
                     raw,
                     baseline = None,
@@ -446,14 +614,9 @@ def epoch_sessions(session_info, params):
             ## those marked bad.
             
             # Save epoch files
-            fname_epochs = fname_base + "_" + epoch_type + "-epo"
-            save_raw_if(epochs, params, row['path_sess'], fname_epochs)
+            fname_epochs = os.path.join(paths.save_preproc, fname_base + "_" + epoch_type + "-epo")
+            save_epochs(epochs, metadata, fname_epochs, params)
 
-            ## save metadata
-            metadata.to_csv(fname_epochs + "-metadata.csv")
-
-
-    session_info['log'] = log
-    print(session_info)
     if any([x != "ok" for x in log]):
+        print(log)
         raise ValueError("Some epochs were misaligned!")
