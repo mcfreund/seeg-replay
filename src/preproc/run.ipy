@@ -34,14 +34,15 @@ for do_reref in [False, True]:
         params.change_pars(do_downsample_session = False, do_rerefs = do_rerefs, do_bandpass = do_band_pass)
         preproc_sessions(session_info, params, paths)
 
-#session_info = session_info.iloc[0:2, :]
+## Exclude these subjs for now as they seem to have issue with finding channels or events
+session_info = session_info[~session_info["participant_id"].isin(["e0013LW", "e0015TJ"])]
 
 # Time-frequency transform
 params.change_pars(suffix_preproc = "_no60hz")  ## no bandpass or rereferencing
 time_frequency_decompose(session_info, params, paths)
 
 # Epoch the data
-params.save_h5 = True
+params.change_pars(save_h5 = True)
 suffices = ["_no60hz"] + \
     ["_no60hz_morletfull_" + region for region in params.tf_regions_fnames] + \
     ["_no60hz_morletbins_" + region for region in params.tf_regions_fnames]
