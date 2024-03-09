@@ -42,7 +42,7 @@ In order to associate sharp-wave ripple occurance with behavior, we determined t
 
 (Some plots - not sure the exact number yet.)
 
-The regression results plotted here were not significant, leading us to conclude that SWRs during the behavioral periods were not strongly, or not linearly, associated with subsequent behavioral performance.
+The regression results plotted here were not significant, leading us to conclude that SWRs during the behavioral periods were not strongly, or not linearly, associated with subsequent behavioral performance. We intend to extend these analyses with further characterization of the SWRs themselves, as well as an analysis of the subjects' sleep data, however.
 
 ### Model-free and Model-light Neural and Neural-Behavioral Analyses
 Even in the absence of SWR-behavioral associations, both SWRs and the other oscillatory events we can detect may have interesting correlates across other brain areas. To assess this, we first examined the neural data generally, characterizing different regions' activity in terms of time, frequency, and time-frequency analyses. Stereotyped responses to task periods were observed in a number of regions, especially those distributed across frontal cortex. These are plainly visible in the time-series data, especially for the clip-cue task periods, during which participants had to prepare their upcoming responses. Examples of these include the following:
