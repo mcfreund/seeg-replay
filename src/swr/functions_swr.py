@@ -8,9 +8,7 @@ from scipy.signal import hilbert
 from datetime     import datetime
 
 from src.shared.utils  import *
-from src.preproc.utils import save_raw_if
-
-import ipdb
+from src.swr.plots     import *
 
 class SWRData:
     def __init__(self):
@@ -203,10 +201,9 @@ def check_adj_power_raws(idx_beg, idx_end, raw, contact, thresh=1):
     return np.where(keep)[0]
 
 
-def get_swrs_from_lfps(lfps, save_pkl = False, save_swrs = False, inspect_swrs = False):
+def get_swrs_from_lfps(lfps, save_pkl=False, save_swrs=False):
     '''Gets SWR event times from LFP data.'''
     # NB this is confirmed as of 2024-03-01 to produce the exact same output as get_swrs_from_lfps.m
-    # But without all the matlab nonsense.
 
     # Create folder to save things in if requested
     if save_swrs:
@@ -234,23 +231,18 @@ def get_swrs_from_lfps(lfps, save_pkl = False, save_swrs = False, inspect_swrs =
 
                 # Remove SWRs with elevated power on adjacent electrodes
                 keep = check_adj_power(swrs.idx_beg, swrs.idx_end, lfps[subj][sess][contact], thresh=1)
-                swrs.keep_inds(keep)
+                #swrs.keep_inds(keep)
 
                 # Indicate how many there were
-                print(f'Candidate SWRs found: {swrs.n_events}') #, number spurious: {sum(~keep)}, kept: {sum(keep)}')
+                #print(f'Candidate SWRs found: {swrs.n_events}, kept: {len(keep)}')
+
+                # Indicate how many there were
+                print(f'Candidate SWRs found: {swrs.n_events}')
 
                 # Save
                 swrs_all[subj][sess][contact] = swrs
 
                 # Visually inspect if desired
-                if inspect_swrs:
-                    plt.ion()
-                    pow_z = sp.stats.zscore(abs(hilbert(lfp_bp.flatten())))
-                    for i in range(swrs.n_events):
-                        plot_swr(i, swrs, lfp_bp, pow_z, contact)
-                        input('Press enter to continue')
-                        plt.close('all')
-    
                 if save_swrs:
                     # For plotting:
                     pow_z = sp.stats.zscore(abs(hilbert(lfp_bp.flatten())))
@@ -259,31 +251,11 @@ def get_swrs_from_lfps(lfps, save_pkl = False, save_swrs = False, inspect_swrs =
                         plt.savefig(f'{dir_figs}/{subj}_{contact}_{sess}_swr_{i}.png')
                         plt.close()
     
-    # Indicate how many there were
-    #print(f'Candidate SWRs found: {swrs.n_events}, number spurious: {sum(~keep)}, kept: {sum(keep)}')
-
     # Save if requested
-    if save_pkl: dill_save(swrs_all, './data/ca1_swrs.pt')
+    if save_pkl: dill_save(swrs_all, './data/ca1_swrs_' + datestr + '.pt')
 
     return swrs_all
 
-
-def plot_swr(i, swrs, lfp_bp, pow_z, contact):
-    plt.figure(figsize=[8,6])
-    plt.subplot(3,1,1)
-    plt.plot(swrs.ctime[i], swrs.ctxts[i])
-    plt.plot(swrs.times[i], swrs.traces[i])
-    
-    plt.subplot(3,1,2)
-    plt.plot(swrs.ctime[i], lfp_bp[ swrs.ctx_beg[i]:swrs.ctx_end[i] ])
-    plt.plot(swrs.times[i], lfp_bp[ swrs.idx_beg[i]:swrs.idx_end[i] ])
-
-    plt.subplot(3,1,3)
-    plt.plot(swrs.ctime[i], pow_z[ swrs.ctx_beg[i]:swrs.ctx_end[i] ])
-    plt.plot(swrs.times[i], pow_z[ swrs.idx_beg[i]:swrs.idx_end[i] ])
-    
-    plt.title(f'Contact {contact} SWR {i} ')
-    plt.tight_layout()
 
 
 def get_swrs_from_raws(paths, subjs, sessions, save_pkl = False, save_swrs = False, inspect_swrs = False):
@@ -313,17 +285,10 @@ def get_swrs_from_raws(paths, subjs, sessions, save_pkl = False, save_swrs = Fal
             # Get white matter contacts to drop.
             wmctcts = find_contacts(paths, subjs, loc='white matter')[subj]
 
-            # Make sure they're all in the raw file
-            droplist = []
-            for wmctct in wmctcts:
-                exists, name = check_contact_exists(wmctct,raw_lfp)
-                if exists:
-                    droplist.append(name)
-
             # Drop them.
-            raw_lfp = raw_lfp.drop_channels(droplist)
-            raw_bp  = raw_bp.drop_channels(droplist)
-            raw_pow = raw_pow.drop_channels(droplist)
+            raw_lfp = raw_lfp.drop_channels(wmctcts, on_missing='ignore')
+            raw_bp  = raw_bp.drop_channels(wmctcts, on_missing='ignore')
+            raw_pow = raw_pow.drop_channels(wmctcts, on_missing='ignore')
 
             # Numpy arrays of LFP data, power data, time
             lfp_array = raw_lfp._data
@@ -465,66 +430,6 @@ def aggregate_swrs_and_behavior(swrs):
     df = pd.merge(df, tmp_df, how = 'outer')
 
     return df
-
-def plot_swrs_and_behavior(df):
-    # Encoding counts vs performance
-    plt.figure()
-    plt.plot(df['swr_cnt_enc'], df['err_pos_enc'],'o')
-    plt.xlabel('Num. SWRs'); plt.ylabel('Position Error')
-    plt.title('e0010GP Encoding SWR by Encoding Accuracy')
-
-    plt.figure()
-    plt.plot(df['swr_cnt_enc'], df['err_pos_same'],'o')
-    plt.xlabel('Num. SWRs'); plt.ylabel('Position Error')
-    plt.title('e0010GP Encoding SWR by SameDay Accuracy')
-
-    plt.figure()
-    plt.plot(df['swr_cnt_enc'], df['err_pos_next'],'o')
-    plt.xlabel('Num. SWRs'); plt.ylabel('Position Error')
-    plt.title('e0010GP Encoding SWR by NextDay Accuracy')
-
-    plt.figure()
-    diff1 = abs(df['err_pos_enc'])-abs(df['err_pos_same'])
-    diff2 = abs(df['err_pos_enc'])-abs(df['err_pos_next'])
-    plt.plot(df['swr_cnt_enc']-0.05, diff1,'o')
-    plt.plot(df['swr_cnt_enc']+0.05, diff2,'o')
-
-    plt.xlabel('Num. SWRs'); plt.ylabel('Position Error Change')
-    plt.title('SWR Counts vs Improvement')
-    plt.legend(['Encoding vs Same', 'Encoding vs Next'])
-
-
-    # Same-day counts vs performnace
-    plt.figure()
-    plt.plot(df['swr_cnt_same'], df['err_pos_same'],'o')
-    plt.xlabel('Num. SWRs'); plt.ylabel('Position Error')
-    plt.title('e0010GP SameDay SWR by SameDay Accuracy')
-
-    plt.figure()
-    plt.plot(df['swr_cnt_same'], df['err_pos_next'],'o')
-    plt.xlabel('Num. SWRs'); plt.ylabel('Position Error')
-    plt.title('e0010GP SameDay SWR by NextDay Accuracy')
-
-    # Next-day counts vs performance
-    plt.figure()
-    plt.plot(df['swr_cnt_next'], df['err_pos_next'],'o')
-    plt.xlabel('Num. SWRs'); plt.ylabel('Position Error')
-    plt.title('e0010GP NextDay SWR by NextDay Accuracy')
-
-
-    # SWR counts by trial and condition
-    plt.figure()
-    plt.plot(df['trial'], df['swr_cnt_enc'],'o')
-    plt.xlabel('Trial Number')
-    plt.ylabel('SWR Count')
-    plt.title('e0010GP Encoding SWR Count by Trial')
-
-    plt.figure()
-    plt.plot(df['condition'], df['swr_cnt_enc'],'o')
-    plt.xlabel('Condition Number')
-    plt.ylabel('SWR Count')
-    plt.title('e0010GP Encoding SWR Count by Condition')
-
 
 
 
