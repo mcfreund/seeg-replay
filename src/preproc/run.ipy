@@ -1,26 +1,54 @@
+import os
+import pandas as pd
+
 from src.shared.paths      import PathPresets
 from src.preproc.params    import ParamsPreProc
 from src.preproc.functions import make_session_info, make_raws, preproc_sessions
-from src.preproc.functions import inspect_sessions, epoch_sessions, clip_sessions
+from src.preproc.functions import inspect_sessions, epoch_sessions, clip_sessions, time_frequency_decompose
 
 # Parameters that control preprocessing functions, paths for everything
-paths  = PathPresets('dan-xps-15')
+paths  = PathPresets('oscar')
 params = ParamsPreProc()
 
-# Generate metadata about which recordings are which
-session_info = make_session_info(params, paths)
+# Generate/read metadata about which recordings are which
+fname_session_info = os.path.join(paths.processed_raws, "session_info.csv")
+if not os.path.exists(fname_session_info):
+    session_info = make_session_info(params, paths)
+else:
+    ## Or, read session info if already generated:    
+    session_info = pd.read_csv(fname_session_info)
 
-# Use rows to read session data
-#raws = make_raws(session_info, params, paths)
+# Use rows to create raw objects from session data (pkl files)
+if params.do_make_raws:
+    raws = make_raws(session_info, params, paths)
 
-# # Manually, visually inspect sessions for bad channels
-#inspect_sessions(session_info, params)
+# Manually, visually inspect sessions for bad channels
+if params.do_interact:
+    inspect_sessions(session_info, params)
 
-# # Line noise, bandpass, re-referencing, down-sampling
-preproc_sessions(session_info, params, paths)
+# Line noise, bandpass, re-referencing, down-sampling
 
-# # Clip sessions into lots of files
-# clip_sessions(session_info, params, paths)
+params.change_pars(do_downsample_session = False)
+for do_reref in [False, True]:
+    for do_band in [False, True]:
+        params.change_pars(do_downsample_session = False, do_rerefs = do_rerefs, do_bandpass = do_band_pass)
+        preproc_sessions(session_info, params, paths)
 
-# # Epoch the data
-# epoch_sessions(session_info, params)
+#session_info = session_info.iloc[0:2, :]
+
+# Time-frequency transform
+params.change_pars(suffix_preproc = "_no60hz")  ## no bandpass or rereferencing
+time_frequency_decompose(session_info, params, paths)
+
+# Epoch the data
+params.save_h5 = True
+suffices = ["_no60hz"] + \
+    ["_no60hz_morletfull_" + region for region in params.tf_regions_fnames] + \
+    ["_no60hz_morletbins_" + region for region in params.tf_regions_fnames]
+for suffix in suffices:
+    params.change_pars(suffix_preproc = suffix)
+    epoch_sessions(session_info, params, paths)
+
+
+# Clip sessions into lots of files
+#clip_sessions(session_info, params, paths)

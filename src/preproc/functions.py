@@ -1,11 +1,13 @@
 '''
 This file contains the main preprocessing functions.
 '''
+
 import os
 import mne
 import numpy  as np
 import pandas as pd
 import ipdb
+import dill
 from joblib import Parallel, delayed
 from src.preproc.utils import *
 from src.shared.utils  import *
@@ -338,15 +340,15 @@ def preproc_sessions(session_info, params, paths):
         #         save_plt_if(copy, params, fname, paths)
 
         # # Unipolar, for reference
-        if params.do_rerefing:
-            copy = raw.copy()
-            copy, chinfo_copy = rereference(copy, chinfo, row['path_sess'], method = 'unipolar')
-            if params.save_step_rerefing:
-                save_raw_if(copy, params, row['path_sess'], fname + '_uni')
-                save_plt_if(copy, params, fname, paths)
+        # if params.do_rerefing:
+        #     copy = raw.copy()
+        #     copy, chinfo_copy = rereference(copy, chinfo, row['path_sess'], method = 'unipolar')
+        #     if params.save_step_rerefing:
+        #         save_raw_if(copy, params, row['path_sess'], fname + '_uni')
+        #         save_plt_if(copy, params, fname, paths)
 
-                # Conserve memroy
-                del copy
+        #         # Conserve memroy
+        #         del copy
         
         # # Laplacian w/ self-ref, for reference
         # if params.do_rerefing:
@@ -449,6 +451,67 @@ def clip_sessions(session_info, params):
 
 
 
+def time_frequency_decompose(session_info, params, paths):
+    '''
+    This function reads preprocessed raw timeseries data and implements a morelet wavelet transform, 
+    then saves the time-frequency power timeseries.
+    '''
+
+    from src.preproc.utils import time_frequency_decomp, tfarray_to_raw, bin_wavelets
+    
+    for i, row in session_info.iterrows():
+
+        path_sess = os.path.join(paths.processed_raws, row["participant_id"], row["session"])
+
+        # Say what subject & file we're on
+        print("Processing subject " + row["participant_id"] + ", session " + row["session"])
+        print("File " + str(i + 1) + " of " + str(len(session_info)))
+
+        # Read raw file (and drop bads)
+        
+        fname_base = os.path.join(path_sess, row["participant_id"] + "_" + row["session"] + params.suffix_preproc)
+        raw = mne.io.read_raw_fif(fname_base + "_raw.fif", preload = True)
+        raw.drop_channels(raw.info["bads"])
+        chinfo = pd.read_csv(os.path.join(row['path_subj'], row["participant_id"] + "_chinfo.csv"))
+        
+        ## prefix for output filename:
+        #fname_out = row["participant_id"] + "_" + row["session"]
+        
+        ## subset channels
+        is_greymatter = chinfo["White Matter"] == 0
+        
+        for region_i, region in enumerate(params.tf_regions):
+
+            is_region = chinfo["Level 3: gyrus/sulcus/cortex/nucleus"].str.contains(region)
+            contacts = chinfo[is_region & is_greymatter]["contact"].tolist()
+            contacts = [c for c in contacts if c in raw.ch_names] ## only keep contacts that are in the raw file
+            raw_region = raw.copy().pick(contacts)
+
+            ## apply time-frequency decomp
+
+            tf_array = time_frequency_decomp(raw_region, params)
+            tf_binned = bin_wavelets(tf_array, params)  ## aggregate into bands
+            
+            ## put into raw objects
+            
+            raw_tf = tfarray_to_raw(tf_array,
+                params.tf_freqs, raw_region.ch_names, "seeg", 
+                raw_region.info["sfreq"], raw_region.annotations)
+
+            raw_binned = tfarray_to_raw(tf_binned,
+                params.tf_bands.keys(), raw_region.ch_names, "seeg", 
+                raw_region.info["sfreq"], raw_region.annotations)
+
+            ## save
+
+            fname_out_tf = fname_base + "_morletfull_" + params.tf_regions_fnames[region_i]
+            fname_out_binned = fname_base + "_morletbins_" + params.tf_regions_fnames[region_i]
+            if params.save_fif:
+                save_raw_if(raw_tf, params, path_sess, fname_out_tf)
+                save_raw_if(raw_binned, params, path_sess, fname_out_binned)
+
+
+
 def epoch_sessions(session_info, params, paths):
     '''
     This script reads preprocessed raw timeseries data and epochs it into trials.
@@ -486,6 +549,11 @@ def epoch_sessions(session_info, params, paths):
         
         # For each epoch, select data and save as a file
         for epoch_type in params.epoch_info.keys():
+
+            is_bad_combo = (epoch_type == "clipcue") & (row["session"] != "Encoding")
+            if is_bad_combo:
+                ## clipcue only present during encoding session, therefore skip.
+                continue
             
             ## create metadata df from events/trigs:
             metadata, events_out, event_id_out = mne.epochs.make_metadata(
@@ -510,6 +578,7 @@ def epoch_sessions(session_info, params, paths):
             else:
                 log.append("ok")
             
+            beh_data_sub = beh_data_sub.sort_values(by = "trial_num")
             metadata["trial_num"] = beh_data_sub["trial_num"].values  ## NB: ASSUMES BOTH BEH AND EPOCHS ARE CHRONOLOG.
             
             ## epoch and save
@@ -517,12 +586,12 @@ def epoch_sessions(session_info, params, paths):
             # Anti-aliasing filter and decimation factor
             if params.do_downsample_epochs:
                 # https://mne.tools/stable/auto_tutorials/preprocessing/30_filtering_resampling.html#best-practices
-                raw.filter(0, params.sample_freq_new / 3)
+                raw.filter(0, params.sample_freq_new / 3, n_jobs = params.tf_n_jobs)
                 decim = int(params.sample_freq_native / params.sample_freq_new)
             else:
                 decim = 1  ## no downsampling
                 
-            for reject_bad_epos in [True, False]:                
+            for reject_bad_epos in [True, False]:
                 epochs = mne.Epochs(
                     raw,
                     baseline = None,
@@ -545,14 +614,9 @@ def epoch_sessions(session_info, params, paths):
             ## those marked bad.
             
             # Save epoch files
-            fname_epochs = fname_base + "_" + epoch_type + "-epo"
-            save_raw_if(epochs, params, row['path_sess'], fname_epochs)
+            fname_epochs = os.path.join(paths.save_preproc, fname_base + "_" + epoch_type + "-epo")
+            save_epochs(epochs, metadata, fname_epochs, params)
 
-            ## save metadata
-            metadata.to_csv(fname_epochs + "-metadata.csv")
-
-
-    session_info['log'] = log
-    print(session_info)
     if any([x != "ok" for x in log]):
+        print(log)
         raise ValueError("Some epochs were misaligned!")

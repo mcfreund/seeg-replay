@@ -6,8 +6,8 @@ import meegkit
 import scipy
 import scipy as sp
 import ipdb
-
-
+import dill
+import h5py
 import pandas as pd
 import scipy.io as sio
 import numpy as np
@@ -186,7 +186,7 @@ def save_raw_if(raw, params, path_sess, fname):
     # Save .h5 format
     if params.save_h5:
         df = raw.to_data_frame()
-        df.to_hdf(fname + 'h5')
+        df.to_hdf(fname + '.h5')
 
 
 # Plot functions
@@ -505,3 +505,115 @@ def clip_iterator(raw, params, str_beg, str_end, path, fname, sfx, times = None)
             if params.do_downsample_trials:
                 new = new.resample(params.sample_freq_new)
                 save_raw_if(new, params, path, fname + '_ds_' + sfx + '_' + f'{i:02}')
+
+
+def time_frequency_decomp(raw, params):
+    '''
+    Compute time-frequency decomposition of raw timeseries data with morlet wavelets.
+    Returns an array of channel * peak frequency * timepoint.
+    '''
+
+    tf = mne.time_frequency.tfr_array_morlet(
+        ## expand dimensions b/c tfr_array_morlet expects an "epochs" array
+        ## (but we want to run this on raw timeseries)
+        np.expand_dims(raw._data, 0),
+        sfreq = raw.info["sfreq"],
+        freqs = params.tf_freqs,
+        n_cycles = params.tf_n_cycles,
+        output = "power",
+        zero_mean = True,
+        n_jobs = params.tf_n_jobs
+        )[0, ...]  ## drop first dimension; tf is channel by peak frequency by timepoint
+    tf = np.log(tf)
+
+    return tf
+
+
+def tfarray_to_raw(tf, freqs, ch_names, ch_types, sfreq, annotations = None):
+    '''
+    Convert a time-frequency array to a raw object.
+    '''
+    ## first create channel names for time-frequency object
+    ## for each element of ch_names_eeg, create n_freq new elements
+    ch_names_tf = []
+    for ch_i in range(len(ch_names)):
+        ch_names_tf.extend([ch_names[ch_i] + "_" + str(wavelet) for wavelet in freqs])
+    info = mne.create_info(ch_names_tf, sfreq = sfreq, ch_types = ch_types)
+    ## now put into new raw object
+    out = mne.io.RawArray(
+        tf.reshape(-1, tf.shape[2]),  ## freq*channel by time; wavelets repeat faster than channels
+        info)
+    out.set_annotations(annotations)
+    return out
+
+
+def tf_binning_matrix(freqs, bands):
+    '''
+    Get a binning matrix for a set of frequency bands.
+    This matrix can be applied to the full spectrum of wavelets to aggregate each within predefined bands.
+    '''
+    ## build list of indicator arrays, one array per band
+    m = [(freqs >= min(bands[x])) & (freqs <= max(bands[x])) for x in bands.keys()]
+    ## stack into matrix and convert to int, to make a dummy coded / one-hot matrix
+    m = np.stack(m).astype(int).T
+    ## normalize so each column sums to 1 (i.e., takes average over all wavelets)
+    m = (m / m.sum((0))).T
+    return m
+
+
+def bin_wavelets(tf_array, params):
+    '''
+    Aggregates instantaneous power over wavelets within prespecified frequency bands.
+    Returns band * channel * time array
+    '''
+    m = tf_binning_matrix(params.tf_freqs, params.tf_bands)
+    tf_binned = np.matmul(m, tf_array)
+    return tf_binned
+
+
+def separate_channel_freq(epochs):
+    '''
+    Input: an epochs object with channel*frequency concatenated
+    Output: an array where channel and frequency are separated along different dimensions
+    '''
+    ch_names, freqs = [], []
+    for item in epochs.ch_names:
+        ch_name, freq = item.split("_")
+        ch_names.append(ch_name)
+        freqs.append(freq)
+    freqs = np.unique(freqs)
+    ch_names = np.unique(ch_names)
+    times = epochs.times
+    epoarray = epochs._data
+    reshaped_tf = epoarray.reshape(epoarray.shape[0], len(ch_names), len(freqs), len(times))
+    reshaped_tf = np.transpose(reshaped_tf, (0, 3, 1, 2))  ## trial, time, channel, frequency
+
+    return reshaped_tf, times, ch_names, freqs
+
+
+def save_epochs(epochs, metadata, fname, params):
+    
+    if params.save_fif:
+        epochs.save(fname + '.fif', overwrite = True)
+        metadata.to_csv(fname + "-metadata.csv")  ## save metadata
+
+    if params.save_h5:
+        if "morlet" in params.suffix_preproc:
+            ## trial, time, channel, frequency
+            epoarray, times, ch_names, freqs = separate_channel_freq(epochs)
+            with h5py.File(fname + '.h5', 'w') as hf:
+                hf.create_dataset("epochs",  data = epoarray)
+                hf.create_dataset("dimnames",  data = ["trial", "time", "channel", "frequency"])
+                hf.create_dataset("trial_num",  data = metadata["trial_num"])
+                hf.create_dataset("times",  data = times)
+                hf.create_dataset("ch_names",  data = ch_names)
+                hf.create_dataset("freqs",  data = freqs)
+        else:
+            epoarray = epochs._data
+            epoarray = np.transpose(epochs, [0, 2, 1])
+            with h5py.File(fname + '.h5', 'w') as hf:
+                hf.create_dataset("epochs",  data = epoarray)
+                hf.create_dataset("dimnames",  data = ["trial", "time", "channel"])
+                hf.create_dataset("trial_num",  data = metadata["trial_num"])
+                hf.create_dataset("times",  data = epochs.times)
+                hf.create_dataset("ch_names",  data = epochs.ch_names)

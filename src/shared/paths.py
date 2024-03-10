@@ -9,8 +9,8 @@ class PathPresets:
                 # Preprocessing data operation paths
                 self.figs          = '/oscar/data/brainstorm-ws/megagroup_data/figs'
                 self.unproc_data   = '/oscar/data/brainstorm-ws/seeg_data/Memory Task Data/Epilepsy/Monitoring/'
-                #self.save_preproc = '/oscar/data/brainstorm-ws/megagroup_data'
-                self.save_preproc  = '/oscar/data/brainstorm-ws/tmp'
+                self.save_preproc = '/oscar/data/brainstorm-ws/megagroup_data'
+                #self.save_preproc  = '/oscar/data/brainstorm-ws/tmp'
                 self.chnl          = '/oscar/data/brainstorm-ws/seeg_data/Memory Task Data/Imaging/Epilepsy'
 
             case 'dan-xps-15':
