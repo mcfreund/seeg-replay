@@ -1,7 +1,7 @@
 # Brainstorm Challenge 2024 Repository
 
 ## Submission
-The state of our project is summarized [here](https://docs.google.com/document/d/1uzaDUmrcNabS9Y7WW-nJzn2VQ5fxtFguiGgj0gWNvyg/edit?usp=sharing). The document is basically a progress report, including details on what we did, how, and why. It also includes information on planned analyses, and our general strategy. We will move it in the direction of a master-document for several conference or journal submissions over time.
+The state of our project is summarized [here](https://docs.google.com/document/d/1uzaDUmrcNabS9Y7WW-nJzn2VQ5fxtFguiGgj0gWNvyg/edit?usp=sharing). The document is basically a progress report, including details on what we did, how, and why. It also includes information on planned analyses, and our general strategy.
 
 ## Repository Structure
 Plotted data and analyses are in:
