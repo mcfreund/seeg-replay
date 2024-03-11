@@ -1,15 +1,13 @@
 # Brainstorm Challenge 2024 Repository
 
 ## Submission
-The state of our project is summarized [here](https://docs.google.com/document/d/1uzaDUmrcNabS9Y7WW-nJzn2VQ5fxtFguiGgj0gWNvyg/edit?usp=sharing). The document is basically a progress report, including details on what we did, how, and why, and our results. It also includes information on planned analyses, and our general strategy.
+The state of our project is summarized [here](https://docs.google.com/document/d/1uzaDUmrcNabS9Y7WW-nJzn2VQ5fxtFguiGgj0gWNvyg/edit?usp=sharing). The document is basically a progress report, including details on what we did, how, and why, and our results. It also includes information on planned analyses, and our general strategy. Since we also have too many figures to be reasonably putting on github and constantly remaking when we re-analyze things, you can see some of what we have plot-wise there too. 
 
 ## Repository Structure
 Plotted data and analyses are in:
 ```
 './figs/behavior'            : Analysis of subjects behavioral data
 './figs/channels'            : Channel locations and coverage for each subject
-'./figs/neural'              : Model-free neural data analysis
-'./figs/raw'                 : Preprocessing and data-file agglomeration analyses
 ```
 
 Behavioral data processing files are:
