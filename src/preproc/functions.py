@@ -504,8 +504,8 @@ def time_frequency_decompose(session_info, params, paths):
 
             ## save
 
-            fname_out_tf = fname_base + "_morletfull_" + params.tf_regions_fnames[region_i]
-            fname_out_binned = fname_base + "_morletbins_" + params.tf_regions_fnames[region_i]
+            fname_out_tf = fname_base + "_morletfull_"  + params.tf_spacing + "_" + params.tf_regions_fnames[region_i]
+            fname_out_binned = fname_base + "_morletbins_" + params.tf_spacing + "_" + params.tf_regions_fnames[region_i]
             if params.save_fif:
                 save_raw_if(raw_tf, params, path_sess, fname_out_tf)
                 save_raw_if(raw_binned, params, path_sess, fname_out_binned)

@@ -618,3 +618,98 @@ def save_epochs(epochs, metadata, fname, params):
                 hf.create_dataset("trial_num",  data = metadata["trial_num"])
                 hf.create_dataset("times",  data = epochs.times)
                 hf.create_dataset("ch_names",  data = epochs.ch_names)
+
+
+
+def read_swr(subject, suffix_swr, paths):
+    import pickle
+
+    file_name_swr = f'{paths.processed_raws}/{subject}/{subject}{suffix_swr}.pt'
+
+    
+    with open(file_name_swr, 'rb') as file:
+        swr = pickle.load(file)
+    swr["tmid"] = (swr["tbeg"] + swr["tend"])/2
+    
+    return swr
+
+
+def swr_to_annot(swr, dur_fixed = 0.5):
+    annots_swr = mne.Annotations(onset = swr["tbeg"], duration = swr["tend"] - swr["tbeg"], description = "SWR")
+    annots_beg = mne.Annotations(onset = swr["tbeg"], duration = dur_fixed, description = "SWR_beg")
+    annots_mid = mne.Annotations(onset = swr["tmid"], duration = dur_fixed, description = "SWR_mid")
+    annots_end = mne.Annotations(onset = swr["tend"], duration = dur_fixed, description = "SWR_end")
+    
+    return annots_swr + annots_beg + annots_mid + annots_end
+
+
+def epoch_decim(raw, events, event_dict, params):
+    # Anti-aliasing filter and decimation factor
+    if params.do_downsample_epochs:
+        # https://mne.tools/stable/auto_tutorials/preprocessing/30_filtering_resampling.html#best-practices
+        raw.filter(0, params.sample_freq_new / 3, n_jobs = params.tf_n_jobs)
+        decim = int(params.sample_freq_native / params.sample_freq_new)
+    else:
+        decim = 1  ## no downsampling
+    epochs = mne.Epochs(
+        raw,
+        baseline = params.epoch_baseline,
+        detrend = None,
+        events = events,
+        event_id = event_dict[params.epoch_align_event],
+        tmin = params.epoch_tmin,
+        tmax = params.epoch_tmax,
+        preload = True,
+        decim = decim
+        )
+    
+    return epochs
+
+
+
+def epoch_swrs(raw, params):
+
+    ## Get durations
+    swrs = raw.annotations.to_data_frame()
+    swrs = swrs[swrs["description"] == params.epoch_align_event]
+    if params.epoch_duration == "max":
+        dur = np.max(swrs["duration"])
+    else:
+        dur = params.swr_epoch_duration
+    
+    ## Get events and event dict
+    events, event_dict = mne.events_from_annotations(raw)
+
+    epochs = epoch_decim(raw, events, event_dict, params)
+    return epochs
+
+
+def epochs_to_list(epochs):
+    '''
+    Extract data into list of time x channel arrays (one per epoch).
+    '''
+    data = epochs._data
+    data = [data[i, :, :].T for i in range(data.shape[0])]
+    return data
+
+
+def trim_epochs(data, durations):
+    '''
+    Given list of time x channel arrays (one per epoch), cut each based on duration.
+    '''
+    for epoch_i, d in enumerate(data):    
+        n_samps = int(np.round(durations[epoch_i] * epochs.info["sfreq"]))
+        data[epoch_i] = d[range(n_samps), :]
+    
+    return data
+
+
+def read_raw(subject, session, params, paths):
+    file_name = f'{paths.processed_raws}/{subject}/{session}/{subject}_{session}_{params.suffix_preproc}.fif'
+    raw = mne.io.read_raw_fif(file_name, preload = True)
+    return raw
+
+
+def read_chinfo(subject, paths):
+    chinfo = pd.read_csv(os.path.join(paths.processed_raws, subject, subject + "_chinfo.csv"))
+    return chinfo
