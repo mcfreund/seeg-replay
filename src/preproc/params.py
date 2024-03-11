@@ -158,18 +158,19 @@ class ParamsPreProc:
         
         s.tf_max_freq = 150
         s.tf_min_freq = 1
-        s.tf_step = 2
+        s.tf_n_freq = 75
         ## peak wavelet frequencies:
-        ## (could also do log spacing, but this would overrepresent low vs high frequencies)
-        s.tf_freqs = np.arange(s.tf_min_freq, s.tf_max_freq + 1, s.tf_step)
-        s.tf_n_freq = len(s.tf_freqs)
-        #s.tf_freqs = np.linspace(s.tf_min_freq, s.tf_max_freq, num = s.tf_n_freq)
+        s.tf_spacing = "log"
+        if s.tf_spacing == "log":
+            s.tf_freqs = np.exp(np.linspace(np.log(s.tf_min_freq), np.log(s.tf_max_freq), num = s.tf_n_freq))
+        elif s.tf_spacing == "linear":
+            s.tf_freqs = np.linspace(s.tf_min_freq, s.tf_max_freq, s.n_freq)
+            #s.tf_freqs = np.arange(s.tf_min_freq, s.tf_max_freq + 1, s.tf_step)
         s.tf_min_n_cycles = 3  ## controls width of gaussians in time domain
         s.tf_max_n_cycles = 20
         s.tf_n_cycles = np.linspace(s.tf_min_n_cycles, s.tf_max_n_cycles, num = s.tf_n_freq)
         s.tf_n_jobs = 32
         ## regions to subset for time-frequency files (just to keep file sizes manageable)
-        ## 
         s.tf_regions = ["frontal", "temporal", "hippocampus|amygdala"]
         ## their corresponding filename suffix strings:
         s.tf_regions_fnames = ["frontal", "temporal", "hcamy"]
@@ -183,6 +184,12 @@ class ParamsPreProc:
             highgamma = [71, 150]
         )
         s.tf_binning_mat = tf_binning_matrix(s.tf_freqs, s.tf_bands)
+
+        s.epoch_tmin = -0.5
+        s.epoch_tmax = 1.5
+        s.epoch_align_event = "SWR_beg"
+        s.epoch_baseline = (-0.5, -0.25)
+        s.epoch_duration = "max"
 
 
     def change_pars(s, **kwargs):
